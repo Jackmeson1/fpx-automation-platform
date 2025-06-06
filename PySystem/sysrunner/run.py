@@ -221,7 +221,10 @@ def main():
                               report_url=report_url, log_dir=log_dir, conf=conf)
     print("Test Scenario is initialized.")
     runner = SysTestRunner()
-    runner.run(test=test_suite)
+    try:
+        runner.run(test=test_suite)
+    except Exception as e:
+        logger.error('Test execution aborted: %s', e, exc_info=True)
 
 def csv_scenario_parse(scenario_file: str) -> DataFrame:
     with open(scenario_file, 'r') as f:
