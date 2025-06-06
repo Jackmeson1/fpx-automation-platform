@@ -525,7 +525,8 @@ class SysTestSuite(unittest.TestSuite):
         """
         elem = etree.SubElement(curr_elem, 'span', attrib={'class': ReportParm.TC_INIT})
         etree.SubElement(elem, 'a',
-                         attrib={'title': tc_title, 'status': ReportParm.TC_INIT, 'target': 'testFrame'}
+                         attrib={'title': tc_title, 'status': ReportParm.TC_INIT,
+                                'target': 'testFrame', 'class': 'tc-link'}
                          ).text = tc_title
         etree.SubElement(elem, 'br')
 
@@ -550,10 +551,19 @@ class ReportHtml:
         self.summary = {'pass': 0, 'fail': 0, 'warn': 0}
         self.summary_elem = None
 
+        self.sse_server = None
+
 
     def init_report_html(self, tests=()):
         # TODO: might merge this with nevigate_to and read_scenario loop less
         # global pysys_root
+        if self.sse_server is None:
+            try:
+                self.sse_server = SSEServer(('0.0.0.0', 8765))
+                threading.Thread(target=self.sse_server.serve_forever, daemon=True).start()
+            except Exception as e:
+                logger.error(f'Failed to start SSE server: {e}')
+                self.sse_server = None
         pysys_report = pysys_root + '/report'
         report_template = pysys_report + '/template.html'
         shutil.copy(pysys_report + '/default.css', self.base_path)
@@ -576,7 +586,9 @@ class ReportHtml:
         self.running_status.attrib['status'] = self.running_status.text = ScenarioStatus.RUNNING
         self.summary_elem = tree.find('body//*[@id="summary"]')
         if self.summary_elem is not None:
-            self.summary_elem.text = 'Pass: 0 Fail: 0 Warn: 0'
+            self.summary_elem.xpath(".//span[@class='test_summary_pass']")[0].text = 'Pass: 0'
+            self.summary_elem.xpath(".//span[@class='test_summary_erro']")[0].text = ' Fail: 0'
+            self.summary_elem.xpath(".//span[@class='test_summary_warn']")[0].text = ' Warn: 0'
         has_fixture = False
         curr_path_list = None
         # for tc in self._tests:
@@ -627,8 +639,9 @@ class ReportHtml:
         elif tc.status in (TestStatus.ERROR, TestStatus.FAILURE):
             self.summary['fail'] += 1
         if self.summary_elem is not None:
-            self.summary_elem.text = 'Pass: {} Fail: {} Warn: {}'.format(
-                self.summary['pass'], self.summary['fail'], self.summary['warn'])
+            self.summary_elem.xpath(".//span[@class='test_summary_pass']")[0].text = f"Pass: {self.summary['pass']}"
+            self.summary_elem.xpath(".//span[@class='test_summary_erro']")[0].text = f" Fail: {self.summary['fail']}"
+            self.summary_elem.xpath(".//span[@class='test_summary_warn']")[0].text = f" Warn: {self.summary['warn']}"
         curr_tc.attrib['href'] = tc.log_fname
         curr_span = curr_tc.getparent()
         curr_class = curr_span.get('class')

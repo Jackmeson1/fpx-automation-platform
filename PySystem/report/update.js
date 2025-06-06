@@ -83,4 +83,27 @@ function updateStatus() {
   document.getElementById("curr_tc").innerHTML = runFlag + curr_title;
 }
 
+function toggleStack(ev) {
+  var a = ev.target;
+  if (a.tagName !== 'A' || !a.classList.contains('tc-link')) {
+    return;
+  }
+  var stack = a.getAttribute('stack');
+  if (!stack) {
+    return;
+  }
+  ev.preventDefault();
+  var next = a.nextSibling;
+  if (next && next.classList && next.classList.contains('tc-stack')) {
+    next.remove();
+    return;
+  }
+  var pre = document.createElement('pre');
+  pre.className = 'tc-stack';
+  pre.textContent = stack;
+  a.parentNode.insertBefore(pre, a.nextSibling);
+}
+
+document.addEventListener('click', toggleStack);
+
 initEventSource();

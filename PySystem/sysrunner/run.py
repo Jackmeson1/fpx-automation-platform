@@ -109,13 +109,20 @@ def main():
         conf: dict = json.load(f)
         assert len(conf) > 0
 
+    REQUIRED_PROFILE_FIELDS = [
+        'obj_dirs', 'tc_base', 'sce_root', 'node_list',
+        'lab_dir', 'log_dir', 'Xauthority', 'Webdriver_dir'
+    ]
     if args.profile:
         prof_path = os.path.join(pysys_root, 'config', 'profiles', f'{args.profile}.json')
-        if os.path.isfile(prof_path):
-            with open(prof_path, 'r') as f:
-                conf.update(json.load(f))
-        else:
+        if not os.path.isfile(prof_path):
             raise FileNotFoundError(f'Profile {args.profile} not found: {prof_path}')
+        with open(prof_path, 'r') as f:
+            prof_conf = json.load(f)
+        missing = [k for k in REQUIRED_PROFILE_FIELDS if k not in prof_conf]
+        if missing:
+            raise KeyError(f'Profile {args.profile} missing required keys: {", ".join(missing)}')
+        conf.update(prof_conf)
 
     conf_file = args.conf
     if conf_file:

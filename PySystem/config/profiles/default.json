@@ -1,12 +1,12 @@
 {
   "obj_dirs": [
-    "/Project/fpx_auto/",
-    "/Project/PySystem/"
+    "/path/to/fpx_auto/",
+    "/path/to/PySystem/"
   ],
-  "tc_base": "/Project/fpx_auto/trail",
-  "sce_root": "/Project/fpx_auto",
+  "tc_base": "/path/to/fpx_auto/trail",
+  "sce_root": "/path/to/fpx_auto",
   "node_list": ["Linux111", "Linux101"],
-  "lab_dir": "/Project/fpx_auto/environment",
+  "lab_dir": "/path/to/fpx_auto/environment",
   "log_dir": "logs",
   "Xauthority": "/root/.Xauthority",
   "Webdriver_dir": "/opt/Webdriver/bin"
