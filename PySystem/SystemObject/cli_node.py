@@ -11,6 +11,7 @@ from pexpect import spawn
 from pexpect import TIMEOUT
 from pexpect import EOF
 from monitor import get_logger
+from .connectors import BaseConnector, TelnetConnector, SSHConnector
 
 logger = get_logger(__name__)
 
@@ -107,8 +108,14 @@ class CliNode(spawn, SysObj):
         self.timeout = timeout
         self.attempts = attempts
         self.wait_time = wait_time
-        # assert hasattr(ConnType, conn_type)
-        # self.conn_type: str = conn_type
+
+        if isinstance(conn_type, BaseConnector):
+            self.connector = conn_type
+            self.conn_type = conn_type.type
+        else:
+            self.connector = self._create_connector(conn_type)
+            self.conn_type = conn_type
+
         self.logged_in: bool = False
         self.force_password: bool = False
         self.keywords: dict = {}  # command keywords -> functions, instance member for the sack of inheritance
@@ -125,6 +132,14 @@ class CliNode(spawn, SysObj):
         # self.ip_client = None
         # self.ip_server = None
         # self.ip_mgmt = None
+
+    def _create_connector(self, conn_type):
+        if conn_type == ConnType.SSH:
+            return SSHConnector()
+        elif conn_type == ConnType.TELNET:
+            return TelnetConnector()
+        else:
+            raise ValueError(f'Unsupported connection type: {conn_type}')
 
     def ssh_init_conf(self):
         self.SSH_OPTS = CliDefault.SSH_OPTS
@@ -178,12 +193,7 @@ class CliNode(spawn, SysObj):
         last_err = None
         for attempt in range(1, self.attempts + 1):
             try:
-                if self.conn_type == ConnType.SSH:
-                    self.ssh_login(timeout)
-                elif self.conn_type == ConnType.TELNET:
-                    self.telnet_login(timeout)
-                else:
-                    raise Exception('Connection types other than SSH or Telnet are yet to support')
+                self.connector.connect(self, timeout)
                 self.logged_in = True
                 return
             except Exception as e:
@@ -196,47 +206,13 @@ class CliNode(spawn, SysObj):
         raise SysTcFail(str(last_err), action=TcFailAction.NEXT)
 
     def ssh_login(self, timeout=-1) -> None:
-        self.logged_in = False
-        # p_resp = {'continue connecting': 'yes' + self.enter,
-        p_resp = {'yes/no.*\)': 'yes' + self.enter,
-                  self.passwd_prompt: self.login_prompt_resp[self.passwd_prompt]}
-        p_resp.update(self.prompt_resp)
-        ssh_options = '-l{}'.format(self.user)
-        if self.force_password:
-            ssh_options = ssh_options + ' ' + CliDefault.SSH_PW_LOGIN_OPTS
-        if self.port != 0:
-            ssh_options = ssh_options + ' -p{}'.format(str(self.port))
-        cmd = "ssh %s %s" % (ssh_options, self.ip)
-        try:
-            self._spawn(cmd)
-            if not self.prompt(p_resp, timeout):  # includes timout as failure
-                raise Exception("SSH to {} failed. ({})".format(self.ip, cmd))
-            self.logged_in = True
-        except Exception:
-            self.logged_in = False
-            raise
+        SSHConnector().connect(self, timeout)
 
     def telnet_login(self, timeout=-1) -> None:
-        self.logged_in = False
-        opt = [self.ip]
-        if self.port != 0:
-            opt.append(str(self.port))
-        try:
-            self._spawn('telnet', opt)
-            if not self.prompt(self.login_prompt_resp, timeout):
-                raise Exception(" Telnet to {} failed.".format(self.ip))
-            self.logged_in = True
-        except Exception:
-            self.logged_in = False
-            raise
+        TelnetConnector().connect(self, timeout)
 
     def logout(self) -> None:
-        if self.conn_type == ConnType.TELNET:
-            self.telnet_logout()
-        elif self.conn_type == ConnType.SSH:
-            self.ssh_logout()
-        else:
-            raise Exception('Only SSH and Telnet are support for CLI @ {}'.format(self.ip))
+        self.connector.disconnect(self)
 
     def telnet_logout(self) -> None:
         """This sends exit to the remote shell. If there are stopped jobs then

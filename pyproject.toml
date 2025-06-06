@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fpx-pysystem"
+version = "0.1.0"
+description = "FPX automation platform"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "FPX"}]
+license = {text = "MIT"}
+
+[project.urls]
+Home = "https://example.com"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "pysys_backup", "vs_pysys_workspace"]
+
+[project.dependencies]
+numpy = "*"
+pandas = "*"
+lxml = "*"
+pexpect = "*"
+selenium = "*"
+keyboard = "*"
+PyYAML = "*"
+html-testRunner = "*"

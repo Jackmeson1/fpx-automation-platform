@@ -73,6 +73,12 @@ Python **3.9+** is recommended. Install dependencies with:
 pip install -r requirements.txt
 ```
 
+The project can also be installed as a package:
+
+```bash
+pip install .
+```
+
 ## 🧯 Troubleshooting
 
 * **No report generated** – check that the `log_dir` location is writable
