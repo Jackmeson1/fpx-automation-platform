@@ -30,23 +30,41 @@ from config.environment import ENV
 
 
 def main():
-    parser = argparse.ArgumentParser(description='CLI runner for PySystem')
+    examples = (
+        "Examples:\n"
+        "  python run.py scenario.csv\n"
+        "  python run.py -t tests -H /pysystem scenario.csv\n"
+        "\u793a\u4f8b:\n"
+        "  python run.py -s \u5355\u72ec\u6a21\u5f0f script.py"
+    )
+    parser = argparse.ArgumentParser(
+        description='CLI runner for PySystem',
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=examples
+    )
     parser.add_argument('-t', '--tc_base', help='specify TC root dir')
     parser.add_argument('-s', '--standalone', action='store_true', default=False, help='Stand alone mode')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
-    parser.add_argument('-D', '--debug', action='store_true', help='Enable debug mode of scenario_file execution')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose output')
+    parser.add_argument('-D', '--debug', action='store_true', default=False,
+                        help='Enable debug mode of scenario_file execution')
     # parser.add_argument('-sce', '--sce_decoded', action='store_true', help='Input scenario is decoded already')
-    parser.add_argument('-sk', '--skip_fixture', action='store_true', help='Skip fixture conf (prov files)')
+    parser.add_argument('-sk', '--skip_fixture', action='store_true', default=False,
+                        help='Skip fixture conf (prov files)')
     parser.add_argument('-c', '--conf', help='specify config file (JSON format)')
     parser.add_argument('-H', '--html_path', help='specify the html report base url path')
-    parser.add_argument('-P', '--pause_on_fail', action='store_true', help='pause when current TC is fail.')
-    parser.add_argument('-A', '--action', type=TcFailAction, choices=list(TcFailAction))
+    parser.add_argument('-P', '--pause_on_fail', action='store_true', default=False,
+                        help='pause when current TC is fail')
+    parser.add_argument('-A', '--action', type=TcFailAction, choices=list(TcFailAction),
+                        default=TcFailAction.NEXT,
+                        help='action when a testcase fails: continue, next or stop')
     # parser.add_argument('-p', '--proj_dir', help='specify project root path')
     # parser.add_argument('-e', '--env_dir', help='specify the path of lab environment files')
     # parser.add_argument('-l', '--lab_file', help='specify the file name of environment')
-    parser.add_argument('-L', '--log_level', help='specify the logging level')
+    parser.add_argument('-L', '--log_level', default='INFO',
+                        help='specify the logging level (default: INFO)')
     # parser.add_argument('scenario', help='specify the scenario file to be run.')
-    parser.add_argument('target', help='specify the scenario file or testcase script(standalone mode) to be run.')
+    parser.add_argument('target',
+                        help='specify the scenario file or testcase script (standalone mode) to be run')
 
     args = parser.parse_args()
 
