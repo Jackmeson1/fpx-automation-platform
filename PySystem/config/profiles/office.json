@@ -1,12 +1,12 @@
 {
   "obj_dirs": [
-    "/Project/fpx_auto/",
-    "/Project/PySystem/"
+    "/path/to/fpx_auto/",
+    "/path/to/PySystem/"
   ],
-  "tc_base": "/Project/office/trail",
-  "sce_root": "/Project/office",
+  "tc_base": "/path/to/office/trail",
+  "sce_root": "/path/to/office",
   "node_list": ["Linux105"],
-  "lab_dir": "/Project/office/environment",
+  "lab_dir": "/path/to/office/environment",
   "log_dir": "logs",
   "Xauthority": "/root/.Xauthority",
   "Webdriver_dir": "/opt/Webdriver/bin"

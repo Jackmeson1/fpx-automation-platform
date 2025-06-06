@@ -11,7 +11,8 @@ cp PySystem/config/config_sample.yaml PySystem/config/config_local.yaml
 
 # 2) pick or edit a runtime profile
 cp PySystem/config/profiles/default.json PySystem/config/profiles/my.json
-#    edit fields such as node_list or sce_root as needed
+#    edit fields such as `node_list` or `sce_root` as needed.  All
+#    profiles must define the keys listed below.
 
 # 3) run one scenario
 python PySystem/sysrunner/run.py --profile=my Policy-Matching/Explicit-L7/10001
@@ -45,6 +46,14 @@ fields can be overridden with an additional level such as
 | `sce_root` | Location of scenarios (CSV files)    |
 | `node_list`| Names of nodes defined in YAML config|
 | `log_dir`  | Directory under `tc_base` for logs   |
+| `obj_dirs` | Additional Python module locations    |
+| `lab_dir`  | Path to lab environment modules       |
+| `Xauthority` | X11 auth file for GUI tests         |
+| `Webdriver_dir` | Directory containing WebDriver binaries |
+
+The bundled profiles use example paths such as `/path/to/fpx_auto/`. These
+should be replaced with real locations on your system. If any of the
+required keys are missing at runtime `run.py` will exit with an error.
 
 ## 🏃 Running Tests
 

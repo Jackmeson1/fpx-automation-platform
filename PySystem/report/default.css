@@ -70,6 +70,14 @@ span.test_summary_warn {
 }
 
 span.test_summary_erro {
-	color:#ff0000;
+        color:#ff0000;
+}
+
+pre.tc-stack {
+        margin-left:20px;
+        background:#f9f9f9;
+        border:1px solid #ccc;
+        padding:4px;
+        white-space:pre-wrap;
 }
 
