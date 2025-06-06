@@ -28,3 +28,11 @@ All configuration fields can also be overridden using environment variables.
 The variable name is built from the node name and field, for example
 `CTRL_PC_IP` or `Linux101_PASSWD`. Nested `labels` fields can be overridden by
 adding the label name, such as `Linux111_LABELS_IP_CLIENT`.
+
+## Installation
+
+Use `pip` to install the required Python packages:
+
+```bash
+pip install -r requirements.txt
+```

@@ -1,0 +1,8 @@
+numpy
+pandas
+lxml
+pexpect
+selenium
+keyboard
+PyYAML
+html-testRunner
