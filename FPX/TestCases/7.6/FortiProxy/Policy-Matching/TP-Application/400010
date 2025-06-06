@@ -1,0 +1,53 @@
+#Verify Matching the TP polocy with inline-APP (CERTIFICATE inspection and ISOLATE)
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_ISOLATE)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*[23]\d\d, FPX2:hostname, ISOLATE; error = HTTP/.*4\d\d)
+curl http://drive.google.com -A'Firefox' -kv --http2 -I
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://www.example.com -A'Firefox' -kv -I --http1.1
+
+
+#https
+@(expect = HTTP/.*[23]\d\d, FPX2:hostname; error = issuer.*FPX1:SN)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL
+@(expect = HTTP/.*403; error = ISOLATE)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+
+<TEARDOWN>
+[FPX1]
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_ISOLATE)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set status disable
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

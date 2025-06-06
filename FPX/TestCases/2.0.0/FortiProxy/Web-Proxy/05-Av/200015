@@ -1,0 +1,55 @@
+#Verify traffic is redirected to scanunitd with heuristic set to pass for both stream-scaning enable/disable with explict-proxy
+<INIT>
+
+<TCID>
+200015, 200016
+
+<SETUP>
+[FPX1]
+config antivirus heuristic
+    set mode pass
+end
+
+dia de app scanunit -1
+dia de en
+
+<TEST>
+[PC1]
+#POST
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -d@[UPLOAD_EICAR] http://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = VIRUS infection)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -d@[UPLOAD_EICAR] https://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = VIRUS infection)
+ENTER
+
+#PUT
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -T[UPLOAD_EICAR] http://[SERVER1:IP_SERVER]/[UPLOAD_PATH] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = VIRUS infection)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -T[UPLOAD_EICAR] https://[SERVER1:IP_SERVER]/[UPLOAD_PATH] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = VIRUS infection)
+ENTER
+
+
+<TEARDOWN>
+[FPX1]
+config antivirus heuristic
+    set mode disable
+end
+
+dia de reset

@@ -1,0 +1,54 @@
+# Test the basic av scan for webproxy of stream-scan and non-stream-scan mode
+<INIT>
+
+<TCID>
+100001 #basic av scan of webproxy stream-scan moded
+
+<SETUP>
+[FPX1]
+config antivirus profile
+    edit [AV_PROF_TEST]
+	config http
+            set av-optimize enable
+	end
+end
+
+dia de app scanunit -1
+dia de en
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl [SERVER1:IP_SERVER]/EICAR_FILE -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+
+[FPX1]
+@(expect = VIRUS infection)
+SEND_ENTER
+
+#test non stream-scanning
+config antivirus profile
+    edit [AV_PROF_TEST]
+	config http
+            set av-optimize disable
+	end
+end
+
+[PC1]
+curl [SERVER1:IP_SERVER]/EICAR_FILE -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+EXPECT  HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$
+
+[FPX1]
+@(error = job.*open)
+SEND_ENTER
+
+
+<TEARDOWN>
+[FPX1]
+config antivirus profile
+    edit [AV_PROF_TEST]
+	config http
+            set av-optimize enable
+	end
+end
+
+dia de reset

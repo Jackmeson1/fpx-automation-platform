@@ -1,0 +1,106 @@
+# Verify policy Matching the TP-polocy with VIP @kernel - DENY
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+conf fire policy
+    edit ($POL_ALL_WAD)
+        set status enable
+    next
+    edit ($POL_TP_MATCH)
+	set status disable
+    next
+    edit ($POL_TP_MATCH_DENY)
+	set status enable
+    next
+    edit ($POL_TP_DEFAULT)
+	set status enable
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+#http GET/POST match server1 path /files
+[PC1]
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl http://SERVER1:VIP_SERVER/($TEST_FILE) -kv --http1.1
+[FPX1]
+@(error = PC1:IP_CLIENT)
+ENTER
+[PC1]
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl http://SERVER2:VIP_SERVER/($TEST_FILE) -kv --http2
+[FPX1]
+@(error = PC2:IP_CLIENT)
+ENTER
+
+[PC1]
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl https://SERVER1:VIP_SERVER/($TEST_FILE) -kv --http2 -d'testing'
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl https://SERVER1:VIP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl https://SERVER2:VIP_SERVER/($TEST_FILE) -kv --http2 -d'testing'
+@(error = HTTP/.*2\d\d; timeout=5; expect_timeout=true)
+curl https://SERVER2:VIP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+#icmp
+@(expect = 100% packet loss)
+ping SERVER1:VIP_SERVER -c4
+@(expect = 100% packet loss)
+ping SERVER2:VIP_SERVER -c4
+
+#ssh
+[FPX1]
+ENTER
+
+[PC1]
+ENTER
+@(expect = Last login; password = SERVER1:passwd)
+@(error = login; timeout=5; expect_timeout=true)
+ssh SERVER1:user@SERVER1:VIP_SERVER
+exit
+
+[FPX1]
+@(error = PC1:IP_CLIENT)
+ENTER
+
+#ftp
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($POL_ALL_WAD)
+        set status enable
+    next
+    edit ($POL_TP_MATCH)
+	set status enable
+    next
+    edit ($POL_TP_MATCH_DENY)
+	set status disable
+    next
+    edit ($POL_TP_DEFAULT)
+	set status disable
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

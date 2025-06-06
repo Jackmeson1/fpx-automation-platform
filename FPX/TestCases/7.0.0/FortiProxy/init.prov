@@ -1,0 +1,120 @@
+# comment
+<INIT>
+
+[GLOBAL]
+nat_vd = nat_vd
+tp_vd = tp_vd
+
+CONFIG_WAIT = 10
+LOG_WAITTIME = 5
+
+PREFIX = 24
+OVERSIZE_LIMIT = 20
+DEFAULT_ALLOW = ping https ssh snmp http telnet
+SNMP_COMMUNITY = test
+AV_PROF_TEST = av-test
+#URLFILTER_DEFAULT = urlfilter_default
+BWORD_DEFAULT = "BWORD"
+BWORD_FTNT = "FTNT"
+WF_PROF_TEST = wf-test
+WF_PROF_DEFAULT = wf-test-default
+BWORD_TABLE_DEFAULT = 1
+BWORD_TABLE_FTNT = 2
+#IPPOOL_MGMT = ippool-mgmt
+IPPOOL_SERVER = ippool-server
+IPPOOL_TP = IPPOOL_TP
+SSL_DEEP_TEST = deep-inspection-test
+SSL_CERT_TEST = cert-inspection-test
+PROF_PROTO_TEST = test
+PROF_INTERCEPT_8080 = inter_8080
+PROF_PROTO_OVERSIZE = oversize
+PROF_STREAM_UNCOMPRESS_LIMIT = stream_uncomp_limit
+PROF_PASSTHRU = passthru
+
+PROXY_PORT = 8080
+FTP_PROXY_PORT = 2121
+SOCKS_PORT = 2121
+
+ISOLATE_SERVER2 = isolate_server2
+ISOLATE_FPX2 = ISOLATE_FPX2
+
+fw_server2 = fw_server2
+fw_fpx2 = fw_fpx2
+
+
+LOCAL_USER_DEFAULT = local_user_default
+LOCAL_GRP_DEFAULT = local_grp_default
+LOCAL_GRPUSER_DEFAULT = local_grpuser_default
+grp_abc = grp_abc
+grp_xyz = grp_xyz
+LDAP_GRP = ldap_grp
+LDAP_GRP_TEST = ldap_grp_test
+RADIUS_GRP = radius_grp
+TAC_GRP = tac_grp
+LDAP_SRV = ldap_srv
+RADIUS_SRV = radius_srv
+TAC_SRV = tac_srv
+WP_MGMT = WP_MGMT
+RADIUS_SRV_IP = 10.150.0.101
+LDAP_SRV_IP = 10.150.0.203
+TAC_SRV_IP = 10.150.0.101
+
+ADDR_SERVER1 = addr_server1
+ADDR_SERVER2 = addr_server2
+ADDR_CLIENT = ADDR_CLIENT
+ADDR_MGMT = ADDR_MGMT
+ADDR_MGMT = ADDR_MGMT
+ADDR_PC1_MGMT = ADDR_PC1_MGMT
+ADDR_PC2_MGMT = ADDR_PC2_MGMT
+SUB_SERVER = SUB_SERVER
+SUB_CLIENT = SUB_CLIENT
+SUB_MGMT = SUB_MGMT
+addr_nexthop = addr_nexthop
+UNMATCH_FQDN = unmatch.fqdn
+
+#AUTH_SCHEME_LOCAL = auth_scheme_local
+AUTH_RULE_FTP = AUTH_FTP
+AUTH_RULE_HTTP = AUTH_HTTP
+AUTH_RULE_MIX = mix
+AUTH_RULE_SOCKS = AUTH_SOCKS
+
+auth_form_local = form_local
+auth_mix = mix
+auth_ntlm_dcless = ntlm_dcless
+auth_basic_local = basic_local
+auth_basic_radius = basic_radius
+auth_basic_tac = basic_tac
+auth_basic_ldap = basic_ldap
+auth_digest_local = digest_local
+auth_form_radius = form_radius
+auth_form_tac = form_tac
+auth_form_ldap = form_ldap
+auth_ntlm_dcless = ntlm_dcless
+cp_client = cp_client
+cp_mgmt = cp_mgmt
+
+UPLOAD_TEST_FILE = upload_a.pdf
+UPLOAD_PDF = upload_a.pdf
+TEST_FILE = files/abc.s0
+DUMMY = files/dummy
+TEST_FILE_20M = files/img_20m
+UPLOAD_PATH = upload/
+TESTFILE = abc.s0
+FTPFOLDER = ftpfolder
+
+IPS_TEST = ips_test
+IPS_TEST_RULE = 9999
+
+FUTURE_SCH = future
+EXPIRED_SCH = expired
+
+
+[PC1]
+su
+cd /ftnt_test/
+<SETUP>
+
+#[PC2]
+#su
+#cd /ftnt_test/
+

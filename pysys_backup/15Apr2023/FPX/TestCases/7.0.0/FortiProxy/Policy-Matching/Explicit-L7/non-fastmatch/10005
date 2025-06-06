@@ -1,0 +1,72 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and DENY) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status enable
+end
+SLEEP 6
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*200, MATCH)
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+expect -e "HTTP/.*403" 
+
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -IL --http1.1
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*403)
+curl -d'test' https://www.httpbin.org/post -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#host unmatched case
+@(expect = HTTP/2\s200)
+curl https://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -IL --http2
+
+#https
+@(expect = HTTP/.*[23]\d\d\s(?!Connect))
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403)
+curl https://mail.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*[23]\d\d\s(?!Connect))
+curl https://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -IL --http2
+
+@(expect = HTTP/.*403)
+curl -X PUT -d'test' http://www.httpbin.org/put -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+@(expect = HTTP/2\s200)
+curl https://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -IL --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status disable
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status disable
+end

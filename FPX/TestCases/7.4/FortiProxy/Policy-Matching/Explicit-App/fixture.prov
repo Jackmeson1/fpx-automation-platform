@@ -1,0 +1,130 @@
+#Explicit policy matching with inline-APPlication
+<INIT>
+[LOCAL]
+APP_ACCEPT = APP_ACCEPT
+APP_DENY = APP_DENY
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf web-proxy explicit-proxy
+    edit ($WP_MGMT)
+        #set status dis
+end
+
+config application group
+    purge
+    edit ($APP_ACCEPT)
+        set application 32121 38131
+    next
+    edit ($APP_DENY)
+        set application 32121
+    next
+end
+
+conf fire policy
+    purge
+    edit ($POL_EXP_MATCH)
+        set type explicit-web
+        #set dstintf "any"
+        set dstintf ($IF_INET) ($IF_SERVER)
+        set srcaddr client_firefox header_ftnt
+        set dstaddr all
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+	#set utm enable
+        set explicit-web-proxy "web-proxy"
+        set webproxy-profile "resp_match"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        #set av-profile ($AV_PROF_TEST)
+        set log-http-transaction enable
+	set https-sub-category enable
+	set app-group ($APP_ACCEPT)
+    next
+    edit ($POL_EXP_MATCH_DENY)
+	set status disable
+        set type explicit-web
+        #set dstintf "any"
+        set dstintf ($IF_INET) ($IF_SERVER)
+        set srcaddr client_firefox header_ftnt
+        set dstaddr all
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set explicit-web-proxy "web-proxy"
+        set webproxy-profile "resp_match"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set log-http-transaction enable
+	set https-sub-category enable
+        set action deny
+        set app-group ($APP_DENY)
+    next
+    edit ($POL_EXP_ISOLATE)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        #set dstintf "any"
+        set dstintf ($IF_INET) ($IF_SERVER)
+        set srcaddr client_firefox header_ftnt
+        set dstaddr all
+        set schedule "always"
+        set action isolate
+	set isolator ($ISOLATE_FPX2)
+        set service "webproxy"
+        set webproxy-profile "resp_isolate"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+	set utm enable
+        set av-profile ($AV_PROF_TEST)
+        set log-http-transaction enable
+	set https-sub-category enable
+	set app-group ($APP_ACCEPT)
+    next
+    edit ($POL_EXP_REDIRECT)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        #set dstintf "any"
+        set dstintf ($IF_INET) ($IF_SERVER)
+        set srcaddr client_firefox header_ftnt
+        set dstaddr all
+        set action redirect
+        set schedule "always"
+        set service webproxy
+	set redirect-url https://[SERVER2:FQDN]/($TEST_FILE)
+	set https-sub-category enable
+	set app-group ($APP_ACCEPT)
+    next
+    edit ($POL_EXP_DEFAULT)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set utm-status enable
+        set webproxy-profile "resp_default"
+        set log-http-transaction enable
+        set profile-protocol-options "test"
+        set ssl-ssh-profile "cert-inspection-test"
+        set av-profile ($AV_PROF_TEST)
+	set https-sub-category enable
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+conf web-proxy explicit-proxy
+    edit ($WP_MGMT)
+        set status en
+end
+

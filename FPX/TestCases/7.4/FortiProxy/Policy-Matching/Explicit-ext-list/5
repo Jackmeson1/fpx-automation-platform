@@ -1,0 +1,74 @@
+# Verify Matching the explicit polocy (cert inspection and deny) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status enable
+end
+SLEEP 15
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*403)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+#repeat with https
+#could match fqdn (host) only, not the url_path
+@(expect = HTTP/.*403)
+curl https://www.example.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+#socks
+@(expect = HTTP/.*403)
+curl http://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+#repeat with https
+#could match fqdn (host) only, not the url_path. requests that need to match url will mismatch the deny pol and match the default accept
+#@(expect = HTTP/.*403)
+# close connection at socks level if fully match a fqdn in url-list and deny for cert inspect
+@(expect_any = Can't complete, HTTP/.*403)
+curl https://www.example.com --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER1:FQDN --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status disable
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status disable
+end

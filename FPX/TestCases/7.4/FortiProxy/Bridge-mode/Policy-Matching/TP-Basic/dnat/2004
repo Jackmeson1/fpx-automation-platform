@@ -1,0 +1,86 @@
+# Verify policy Matching the TP-polocy with VIP @kernel + wad - ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_ALL_WAD)
+        set status enable
+end
+    
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+#http GET/POST match server1 path /files
+[PC1]
+@(expect = HTTP/.*200)
+curl http://SERVER1:VIP_SERVER/($TEST_FILE) -kv --http1.1
+[FPX1]
+@(error = PC1:IP_CLIENT)
+ENTER
+[PC1]
+@(expect = HTTP/.*200)
+curl http://SERVER2:VIP_SERVER/($TEST_FILE) -kv
+[FPX1]
+@(error = PC2:IP_CLIENT)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*200)
+curl https://SERVER1:VIP_SERVER/($TEST_FILE) -kv --http2 -d'testing'
+@(expect = HTTP/.*20\d)
+curl https://SERVER1:VIP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+@(expect = HTTP/.*200)
+curl https://SERVER2:VIP_SERVER/($TEST_FILE) -kv --http2 -d'testing'
+@(expect = HTTP/.*20\d)
+curl https://SERVER2:VIP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+#icmp
+@(expect_any = 0% packet loss, 25%)
+ping SERVER1:VIP_SERVER -c4
+@(expect_any = 0% packet loss, 25%)
+ping SERVER2:VIP_SERVER -c4
+
+#ssh
+[FPX1]
+ENTER
+
+[PC1]
+ENTER
+@(expect = Last login; password = SERVER1:passwd)
+ssh SERVER1:user@SERVER1:VIP_SERVER
+exit
+
+[FPX1]
+@(error = PC1:IP_CLIENT)
+ENTER
+
+#ftp
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+config fire pol
+    edit ($POL_ALL_WAD)
+        set status disable
+end
+

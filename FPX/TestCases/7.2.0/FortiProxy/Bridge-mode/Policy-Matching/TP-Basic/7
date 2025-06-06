@@ -1,0 +1,43 @@
+# Verify http Matching the TP-polocy fqdn dstaddr @wad + single interface + bypass NAT – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Traceback:)
+d de cr r
+d de cr cl
+conf fire pol
+  edit ($POL_ALL_WAD)
+    set status enable
+  next
+end
+
+SLEEP 5
+
+<TEST>
+#http
+[PC1]
+@(expect = HTTP/.*206, MATCH)
+curl http://www.example.com -kv --http1.1
+
+#https
+@(expect = HTTP/.*206, MATCH)
+curl https://www.example.com -kv --http2
+@(expect = HTTP/.*20\d, MATCH)
+curl SERVER1:FQDN/($UPLOAD_PATH) -kv -T($UPLOAD_PDF) -o/dev/null
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+
+conf fire pol
+  edit ($POL_ALL_WAD)
+    set status disable
+  next
+end

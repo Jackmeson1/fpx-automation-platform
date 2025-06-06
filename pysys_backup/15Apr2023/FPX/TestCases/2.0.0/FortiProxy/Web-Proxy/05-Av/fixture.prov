@@ -1,0 +1,297 @@
+# Web-proxy mode UTM Initial provision
+<INIT>
+[GLOBAL]
+EICAR_FILE = virus/eicar.com
+OVERSIZE_FILE = virus/oversize.1
+OVERSIZE_ZIP = virus/oversize.gz
+EICAR_ZIP_48K = virus/eicar_48k.tar.gz
+EICAR_ZIP_20M = virus/eicar_20m.tar.gz
+EICAR_ZIP = virus/eicar.gz
+EICAR_ZERO_20K = virus/eicar_zero_20k
+EICAR_ZERO_80K = virus/eicar_zero_80k
+GRAYWARE_FILE = virus/adware.com
+GRAYWARE_ZIP = virus/grayware.zip
+GRAYWARE_PDF = virus/grayware.pdf
+EICAR_PDF_20M_ZIP = virus/eicar_20m.pdf.gz
+EICAR_BZ2 = virus/eicar_10k.pdf.bz2
+
+UPLOAD_EICAR = upload_eicar.com
+UPLOAD_OVERSIZE = upload_oversize.1
+UPLOAD_OVERSIZE_ZIP = upload_oversize.gz
+UPLOAD_EICAR_ZIP_48K = upload_eicar_48k.tar.gz
+UPLOAD_EICAR_ZIP_20M = upload_eicar_20m.tar.gz
+UPLOAD_EICAR_ZIP = upload_eicar.gz
+UPLOAD_EICAR_PDF_20M_ZIP = upload_eicar_20m.pdf.gz
+UPLOAD_EICAR_BZ2 = upload_eicar_10k.pdf.bz2
+
+ZIP_PASS_SIZE = 20
+UNZIP_PASS_SIZE = 30
+
+AV_CDR = cdr
+AV_ZHVO = zhvo
+AV_QUAR = quaratine
+AV_ARCH = archive
+AV_MMDB_DIS = mmdb_disable
+AV_EMU_DIS = emulator_disable
+
+PROF_PROTO_NOBZ = nobz
+PROF_PROTO_PASSTHRU = passthru
+PROF_STREAM_UNCOMPRESS_LIMIT = stream_uncomp_limit
+
+<SETUP>
+[FPX1]
+conf antivirus setting
+    set grayware enable
+end
+
+config antivirus profile
+    edit [AV_PROF_TEST]
+	set scan-mode default
+        config http
+            set options scan
+        end
+        config ftp
+            set options scan
+        end
+        config imap
+            set options scan
+        end
+        config pop3
+            set options scan
+        end
+        config smtp
+            set options scan
+        end
+        config mapi
+            set options scan
+        end
+        config cifs
+            set options scan
+        end
+        config ssh
+            set options scan
+        end
+    next
+    edit [AV_CDR]
+	set scan-mode default
+        config http
+            set options scan
+        end
+    next
+    edit [AV_ZHVO]
+	set scan-mode default
+        config http
+            set options scan
+        end
+    next
+    edit [AV_QUAR]
+	set scan-mode default
+        config http
+            set options scan quarantine
+        end
+        config ftp
+            set options scan quarantine
+        end
+        config imap
+            set options scan  quarantine
+        end
+        config cifs
+            set options scan quarantine
+        end
+    next
+    edit [AV_ARCH]
+	set scan-mode default
+        config http
+            set options scan
+            set archive-block corrupted nested
+            set archive-log encrypted corrupted nested
+        end
+        config ftp
+            set options scan
+            set archive-block corrupted nested
+            set archive-log encrypted corrupted nested
+        end
+        config cifs
+            set options scan
+            set archive-block corrupted nested
+            set archive-log encrypted corrupted nested
+        end
+        config ssh
+            set options scan
+            set archive-block corrupted nested
+            set archive-log encrypted corrupted nested
+        end
+    next
+    edit [AV_EMU_DIS]
+	set scan-mode default
+        config http
+            set options scan
+            set emulator disable
+        end
+        config ftp
+            set options scan
+            set emulator disable
+        end
+        config pop3
+            set options scan
+            set emulator disable
+        end
+        config smtp
+            set options scan
+            set emulator disable
+        end
+        config cifs
+            set options scan
+            set emulator disable
+        end
+        config ssh
+            set options scan
+            set emulator disable
+        end
+    next
+    edit [AV_MMDB_DIS]
+	set scan-mode default
+        set mobile-malware-db disable
+        config http
+            set options scan
+        end
+        config ftp
+            set options scan
+        end
+        config imap
+            set options scan
+        end
+        config pop3
+            set options scan
+        end
+        config smtp
+            set options scan
+        end
+        config mapi
+            set options scan
+        end
+        config cifs
+            set options scan
+        end
+        config ssh
+            set options scan
+        end
+    next 
+end
+
+config firewall profile-protocol-options
+    edit [PROF_STREAM_UNCOMPRESS_LIMIT]
+        set oversize-log enable
+        config http
+            unset options
+            unset post-lang
+            set stream-based-uncompressed-limit [OVERSIZE_LIMIT]
+            set uncompressed-oversize-limit [OVERSIZE_LIMIT]
+            set oversize-limit [OVERSIZE_LIMIT]
+        end
+    next
+    edit [PROF_PROTO_TEST]
+        config http
+            unset options
+        end
+        conf ftp
+            unset options
+        end
+        conf ssh
+	    unset options
+        end
+    next
+    edit [PROF_PROTO_PASSTHRU]
+        set oversize-log enable
+        config http
+            unset options
+            unset oversize-limit
+            unset uncompressed-oversize-limit
+            set stream-based-uncompressed-limit 10
+        end
+        config ftp
+            unset options
+        end
+        config mapi
+            unset options
+        end
+        config imap
+            unset options
+        end
+        config smtp
+            unset options
+        end
+        config pop3
+            unset options
+        end
+    next
+    edit [PROF_PROTO_NOBZ]
+        config http
+            set ports 80
+            unset options
+            set scan-bzip2 disable
+        end
+        config ftp
+            set ports 21
+            unset options
+            set scan-bzip2 disable
+        end
+        config imap
+            set ports 143
+            set options fragmail
+            set scan-bzip2 disable
+        end
+        config mapi
+            set ports 135
+            set options fragmail
+            set scan-bzip2 disable
+        end
+        config pop3
+            set ports 110
+            set options fragmail
+            set scan-bzip2 disable
+        end
+        config smtp
+            set ports 25
+            set options fragmail splice
+            set scan-bzip2 disable
+        end
+        config ssh
+            unset options
+            set scan-bzip2 disable
+        end
+    next
+end
+
+conf fire policy
+    edit [DEFAULT_PROXY_ID]
+        set av [AV_PROF_TEST]
+    next
+    edit [DEFAULT_IBP_ID]
+        set av [AV_PROF_TEST]
+    next
+    edit [FTP_PROXY_PID]
+        set av [AV_PROF_TEST]
+    next
+    edit [FTP_IBP_PID]
+        set av [AV_PROF_TEST]
+    next
+end
+
+SLEEP 10
+
+<TEARDOWN>
+conf fire policy
+    edit [DEFAULT_PROXY_ID]
+        set av [AV_PROF_TEST]
+    next
+    edit [DEFAULT_IBP_ID]
+        set av [AV_PROF_TEST]
+    next
+    edit [FTP_PROXY_PID]
+        set av [AV_PROF_TEST]
+    next
+    edit [FTP_IBP_PID]
+        set av [AV_PROF_TEST]
+    next
+end

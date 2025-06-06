@@ -1,0 +1,163 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire vipgrp
+    purge
+end
+conf fire vip
+    purge
+    edit ($VIP_SERVER1)
+        set extintf ($IF_CLIENT)
+        set extip SERVER1:VIP_SERVER
+        set mappedip SERVER1:IP_SERVER
+    next
+    edit ($VIP_SERVER2)
+        set extintf ($IF_CLIENT)
+        set extip SERVER2:VIP_SERVER
+        set mappedip SERVER2:IP_SERVER
+    next
+end
+conf fire vipgrp
+    edit ($VIPGRP_SERVER)
+        set interface ($IF_CLIENT)
+        set member ($VIP_SERVER2)
+    next
+end
+
+config firewall proxy-address
+    edit "url_files"
+        set host "all"
+        set path "/files"
+    next
+end
+
+config web-proxy profile
+    edit "resp_test"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_TEST"
+            next
+        end
+    next
+    edit "resp_match"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_MATCHED"
+            next
+        end
+    next
+    edit "resp_forward"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_FORWARD"
+            next
+        end
+    next
+    edit "resp_isolate"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_ISOLATED"
+            next
+        end
+    next
+    edit "resp_default"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_DEFAULT"
+            next
+        end
+    next
+    edit "resp_intercept"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_INTERCEPT"
+            next
+        end
+    next
+end
+
+config firewall service custom
+    edit "intercept_8080"
+        set category "Web Access"
+        set tcp-portrange 8080
+    next
+end
+
+
+#config firewall central-snat-map
+#    purge
+#    edit ($NAT_BYPASS)
+#        set srcintf any
+#        set dstintf ($IF_INET)
+#        set src-addr "all"
+#        set dst-addr "all"
+#	set action bypass
+#	set status disable
+#    next
+#    edit ($NAT_IPPOOL)
+#        set srcintf ($IF_CLIENT)
+#        set dstintf ($IF_INET)
+#        set src-addr "all"
+#        set dst-addr "all"
+#        set action ippool
+#        set nat-ippool ($IPPOOL_TP)
+#    next
+#end
+conf fire central-snat
+    purge
+end
+
+[PC1]
+ip route del SERVER1:IP_SERVER
+ip route add SERVER1:IP_SERVER via ($TP_GATEWAY) src ($IP_CLIENT)
+ip route del SERVER2:IP_SERVER
+ip route add SERVER2:IP_SERVER via ($TP_GATEWAY) src ($IP_CLIENT)
+ip route del SERVER2:IP_INET
+ip route add SERVER2:IP_INET via ($TP_GATEWAY) src ($IP_CLIENT)
+
+#[PC2]
+#ip route del [SERVER1:IP_SERVER]
+#ip route add [SERVER1:IP_SERVER] via [FPX1:IP_CLIENT]
+
+
+<TEARDOWN>
+[FPX1]
+#conf fire central-snat
+#    purge
+#end
+
+[PC1]
+ip route del [SERVER1:IP_SERVER]
+ip route del [SERVER2:IP_SERVER]
+
+#[PC2]
+#ip route del [SERVER1:IP_SERVER]

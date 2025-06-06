@@ -1,0 +1,77 @@
+#FortiProxy transprant policy with VIP
+<INIT>
+[LOCAL]
+VIP_SERVER1 = vip_server1
+VIP_SERVER2 = vip_server2
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire vip
+    purge
+    edit ($VIP_SERVER1)
+        set extintf ($IF_CLIENT)
+        set extip SERVER1:VIP_SERVER
+        set mappedip SERVER1:IP_SERVER
+    next
+    edit ($VIP_SERVER2)
+        set extintf ($IF_CLIENT)
+        set extip SERVER2:VIP_SERVER
+        set mappedip SERVER2:IP_SERVER
+    next
+end
+conf fire policy
+    edit ($POL_TP_MATCH)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1)
+        set dstaddr ($VIP_SERVER1) ($VIP_SERVER2)
+        set utm-status disable
+        #set webproxy-profile "resp_match"
+        unset webproxy-profile
+        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+        #set av-profile ($AV_PROF_TEST)
+	set status enable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set dstaddr ($VIP_SERVER1) ($VIP_SERVER2)
+    next
+    edit ($POL_TP_ISOLATE)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set dstaddr ($VIP_SERVER1) ($VIP_SERVER2)
+        #set webproxy-profile "resp_isolate"
+        unset webproxy-profile
+    next
+    edit ($POL_TP_REDIRECT)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set dstaddr ($VIP_SERVER1) ($VIP_SERVER2)
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1)
+        set utm-status enable
+        set webproxy-profile "resp_match"
+        set av-profile ($AV_PROF_TEST)
+	set status disable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+    next
+    edit ($POL_TP_ISOLATE)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+    next
+    edit ($POL_TP_REDIRECT)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+    next
+end
+
+config fire vip
+    purge
+end
+

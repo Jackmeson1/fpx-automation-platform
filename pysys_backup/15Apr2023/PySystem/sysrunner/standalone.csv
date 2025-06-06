@@ -1,0 +1,2 @@
+Path,QAID,Objective,Priority,Bug,Result,Build,Mark,Tester,Autotested,Platform,BIOS,Comment
+.,00000,Verify TC in standalone mode,Critical,n/a,NotRun,,,Standlone user,Yes,FPX,,

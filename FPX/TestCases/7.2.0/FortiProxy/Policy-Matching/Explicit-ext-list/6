@@ -1,0 +1,98 @@
+# Verify Matching the explicit polocy (ssl-exempt and deny) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status enable
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status enable
+end
+
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            edit 0
+                set fortiguard-cate 192
+        end
+end
+
+SLEEP 10
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*403)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://www.httpbin.org/get -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+#ssl-exempt could match fqdn (host), not the url_path
+@(expect = HTTP/.*403)
+curl https://www.example.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server1 fqdn is not in the ssl-exempt list
+@(expect = HTTP/.*403)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+# server2 fqdn is in the exempt list, match DEFAULT pol
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER2:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+#socks
+@(expect = HTTP/.*403)
+curl http://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*2\d\d, DEFAULT; error = HTTP/.*403)
+curl http://www.httpbin.org/get --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+#ssl-exempt could match fqdn (host), not the url_path
+#close connection to deny at socks level when fully match url (fqdn).
+@(expect_any = Can't complete, HTTP/.*403)
+curl https://www.example.com --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server1 fqdn is not in the ssl-exempt list
+@(expect = HTTP/.*403)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+# server2 fqdn is in the exempt list, match DEFAULT pol
+@(expect = HTTP/.*2\d\d; error = HTTP/.*403)
+curl https://SERVER2:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_MATCH_DENY)
+        set status disable
+    next
+    edit ($POL_EXP_DEFAULT)
+        set status disable
+end
+
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            purge
+    end
+end

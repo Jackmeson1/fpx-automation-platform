@@ -1,0 +1,90 @@
+# Verify GET/POST/PUT Matching the TP-polocy kernel matching only + bypass NAT – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Traceback:)
+d de cr r
+d de cr cl
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    unset webproxy-profile
+    unset utm
+  next
+end
+
+SLEEP 5
+
+<TEST>
+[FPX1]
+dia wad deb en cate session
+dia de en
+
+#http GET/POST match server1 path /files
+[PC1]
+@(expect = HTTP/.*200)
+curl http://SERVER1:FQDN/($TEST_FILE) -kv --http1.1
+@(expect = HTTP/.*200)
+curl SERVER2:FQDN/($TEST_FILE) -kv --http2
+@(expect = HTTP/.*200)
+curl SERVER1:IP_SERVER/($TEST_FILE) -kv -d'test data'
+@(expect = HTTP/.*20\d)
+curl SERVER2:IP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+[FPX1]
+#WAD should not kick-in
+@(error = wad_accept)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*200)
+curl https://SERVER2:FQDN/($TEST_FILE) -kv --http1.1
+[FPX1]
+@(error = wad_accept)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*200)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv --http2
+[FPX1]
+@(error = wad_accept)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*200)
+curl https://SERVER2:FQDN/($TEST_FILE) -kv -d'test data'
+[FPX1]
+@(error = wad_accept)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*20\d)
+curl SERVER1:FQDN/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+
+[FPX1]
+#WAD should not kick-in
+@(error = wad_accept)
+ENTER
+dia wad deb clear
+
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+dia de dis
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+        set webproxy-profile "resp_match"
+	set utm en
+        set av-profile ($AV_PROF_TEST)
+  next
+end

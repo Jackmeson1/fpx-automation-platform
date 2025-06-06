@@ -1,0 +1,101 @@
+#FortiProxy transprant L7 policy
+<INIT>
+[LOCAL]
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf web-proxy explicit-proxy
+    edit ($WP_MGMT)
+        set status dis
+end
+
+conf fire policy
+    purge
+    edit ($POL_EXP_MATCH)
+        set type explicit-web
+        set dstintf "any"
+        set srcaddr client_firefox mgmt_header_ftnt
+        set dstaddr "google_cat_mail" "server1_files" "www.example.com" httpbin_it
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+	set utm enable
+        set explicit-web-proxy "web-proxy"
+        set webproxy-profile "resp_match"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av-profile ($AV_PROF_TEST)
+    next
+    edit ($POL_EXP_MATCH_DENY)
+	set status disable
+        set type explicit-web
+        set dstintf "any"
+        set srcaddr client_firefox mgmt_header_ftnt
+        set dstaddr "google_cat_mail" "server1_files" "www.example.com" httpbin_it
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set explicit-web-proxy "web-proxy"
+        set webproxy-profile "resp_match"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set action deny
+    next
+    edit ($POL_EXP_ISOLATE)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        set dstintf "any"
+        set srcaddr client_firefox mgmt_header_ftnt
+        set dstaddr "google_cat_mail" "server1_files" "www.example.com" httpbin_it
+        set schedule "always"
+        set action isolate
+	set isolator ($ISOLATE_FPX2)
+        set service "webproxy"
+        set webproxy-profile "resp_isolate"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+	set utm enable
+        set av-profile ($AV_PROF_TEST)
+    next
+    edit ($POL_EXP_REDIRECT)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        set dstintf "any"
+        set srcaddr client_firefox mgmt_header_ftnt
+        set dstaddr "google_cat_mail" "server1_files" "www.example.com" httpbin_it
+        set action redirect
+        set schedule "always"
+        set service webproxy
+	set redirect-url https://[SERVER2:FQDN]/($TEST_FILE)
+    next
+    edit ($POL_EXP_DEFAULT)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set utm-status enable
+        set webproxy-profile "resp_default"
+        set log-http-transaction enable
+        set profile-protocol-options "test"
+        set ssl-ssh-profile "cert-inspection-test"
+        set av-profile ($AV_PROF_TEST)
+    next
+end
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+conf web-proxy explicit-proxy
+    edit ($WP_MGMT)
+        set status en
+end
+

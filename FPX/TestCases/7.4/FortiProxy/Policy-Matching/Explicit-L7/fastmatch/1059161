@@ -1,0 +1,115 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (session-auth + cert inspection and accept) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf auth rule
+  edit ($AUTH_RULE_SOCKS)
+    set status enable
+end
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    set groups grp_abc
+    set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+
+SLEEP 5
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+@(expect = HTTP/[^\n]*407)
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/[^\n]*[23]\d\d)
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+#expect -e "HTTP/[^\n]*[23]\d\d" -e MATCH
+@(expect = HTTP/[^\n]*403)
+curl http://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ub:b
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/[^\n]*407)
+curl -X DELETE http://www.httpbin.org/delete -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/[^\n]*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Uc:c
+# when host part is unmatch
+@(expect = HTTP/[^\n]*403)
+curl http://www.nghttp2.org/httpbin/get -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2 -Ua:a
+
+#https
+#need deep scan to determine category, but it is configured as cert inspection
+@(expect = HTTP/[^\n]*403)
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ua:a
+@(expect = HTTP/[^\n]*403)
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/[^\n]*403)
+curl https://www.google.com/maps -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+@(expect = HTTP/[^\n]*[23]\d\d\s(?!Connect))
+curl https://mail.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+#category is determined by host, cert inspect by sni
+@(expect = HTTP/[^\n]*407)
+curl -d'test' https://www.httpbin.org/post -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/[^\n]*403)
+curl https://www.nghttp2.org/httpbin/get -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#socks
+#Category email, host=google with sub-category by url path
+@(expect = authentication; error = HTTP/[^\n]*[23]\d\d)
+curl http://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/[^\n]*[23]\d\d)
+curl http://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+@(expect = HTTP/[^\n]*403)
+curl http://www.google.com --socks5 FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ub:b
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = authentication; error = HTTP/[^\n]*[23]\d\d)
+curl -X DELETE http://www.httpbin.org/delete --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/[^\n]*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Uc:c
+# when host part is unmatch
+@(expect_any = HTTP/[^\n]*403, Can't complete)
+curl http://www.nghttp2.org/httpbin/get --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2 -Ua:a
+
+#https
+#need deep scan to determine category, but it is configured as cert inspection
+@(expect_any = HTTP/[^\n]*403, Can't complete)
+curl https://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ua:a
+@(expect = authentication; error = HTTP/[^\n]*[23]\d\d)
+curl https://www.google.com/mail --socks5 FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect_any = HTTP/[^\n]*403, Can't complete)
+curl https://www.google.com/maps --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+#cate is determined by host but fails to match UA srcaddr with cert-inspect
+#@(expect = HTTP/[^\n]*[23]\d\d)
+@(expect_any = HTTP/[^\n]*403, Can't complete)
+curl https://mail.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+@(expect = authentication; error = HTTP/[^\n]*[23]\d\d)
+curl -d'test' https://www.httpbin.org/post --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect_any = HTTP/[^\n]*403, Can't complete)
+curl https://www.nghttp2.org/httpbin/get --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2 -Ub:b
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    unset groups
+    set ssl-ssh-profile ($SSL_DEEP_TEST)
+end
+
+conf auth rule
+  edit ($AUTH_RULE_SOCKS)
+    set status disable
+end

@@ -1,0 +1,90 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and ACCEPT) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP 3
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*[23]\d\d, MATCH)
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+expect -e "HTTP/.*[23]\d\d" -e MATCH -t 3 -fail unmatch -a next 
+@(error = HTTP/.*[23]\d\d, MATCH)
+curl http://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#Category Information, host=*.httpbin.org is determined by host only
+@(expect = HTTP/.*200, MATCH)
+curl -X PUT -d'test' http://www.httpbin.org/put -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#https
+#need deep scan to determine category, but it is configured as cert inspection
+#@(expect = HTTP/.*403; fail_action = continue)
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+@(expect = HTTP/.*403)
+curl https://www.google.com/mpas -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#Category Information, host=*.httpbin.org is determined by host only
+@(expect = HTTP/.*200)
+curl -d'test' https://www.httpbin.org/post -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#socks
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*[23]\d\d, MATCH)
+curl http://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+expect -e "HTTP/.*[23]\d\d" -e MATCH -t 3 -fail unmatch -a next 
+@(error = HTTP/.*[23]\d\d, MATCH)
+curl http://www.google.com --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#Category Information, host=*.httpbin.org is determined by host only
+@(expect = HTTP/.*200, MATCH)
+curl -X PUT -d'test' http://www.httpbin.org/put --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+# when host part is unmatch
+@(expect = Can't complete; error = HTTP/.*200)
+curl http://www.ubc.ca --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#https
+#need deep scan to determine category, but it is configured as cert inspection
+#@(expect = HTTP/.*403; fail_action = continue)
+@(expect = Can't complete; error = HTTP/.*200)
+curl https://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+@(expect = Can't complete; error = HTTP/.*200)
+curl https://www.google.com/mpas --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#Category Information, host=*.httpbin.org is determined by host only -- socks case, fails to match UA without deep inspect
+#@(expect = HTTP/.*200)
+#curl -d'test' https://www.httpbin.org/post --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+@(expect = Can't complete; error = HTTP/.*200)
+curl https://www.ubc.ca --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+end

@@ -1,0 +1,127 @@
+#FortiProxy transprant policy with inline-Application matching
+<INIT>
+[LOCAL]
+APP_ACCEPT = APP_ACCEPT
+APP_DENY = APP_DENY
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+config application group
+    purge
+    edit ($APP_ACCEPT)
+        set application 32121 38131
+    next
+    edit ($APP_DENY)
+        set application 32121
+    next
+end
+
+config ips settings
+    set proxy-inline-ips en
+end
+
+conf fire policy
+    purge
+    edit ($POL_TP_MATCH)
+        set srcintf "any"
+        #set dstintf "any"
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr "all"
+	#set srcaddr client_firefox mgmt_header_ftnt
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com httpbin_it
+        set dstaddr all
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set webproxy-profile "resp_match"
+        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+        set profile-protocol-options "test"
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        set app-group ($APP_ACCEPT)
+    next
+    edit ($POL_TP_DENY)
+	set status disable
+        set srcintf "any"
+        #set dstintf "any"
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr "all"
+        set dstaddr all
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set profile-protocol-options "test"
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        set app-group ($APP_DENY)
+    next
+    edit ($POL_TP_ISOLATE)
+	set status disable
+        set srcintf "any"
+        #set dstintf "any"
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr "all"
+        set dstaddr all
+        set action isolate
+        set schedule "always"
+        set service "ALL"
+        set webproxy-profile "resp_isolate"
+	set isolator-server [ISOLATE_FPX2]
+        set profile-protocol-options "test"
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        set app-group ($APP_ACCEPT)
+    next
+    edit ($POl_INTER_8080)
+        set srcintf "any"
+        #set dstintf "any"
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "intercept_8080"
+        set utm-status enable
+        set webproxy-profile "resp_intercept"
+        set profile-protocol-options "inter_8080"
+        set ssl-ssh-profile "deep-inspection-test"
+        set av-profile [AV_PROF_TEST]
+    next
+    edit ($POL_TP_DEFAULT)
+	set status disable
+        set srcintf "any"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service ALL_UDP ALL_ICMP ALL_TCP
+        set webproxy-profile "resp_default"
+        set ssl-ssh-profile no-inspection
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+SLEEP ($CONFIG_WAIT)
+
+[PC1]
+ip address add ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+ip addr
+ip route
+#ifconfig ($IF_CLIENT) add ($IP_CLIENT_SEC) netmask 255.255.255.0
+SLEEP ($CONFIG_WAIT)
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+
+config application group
+    purge
+end
+
+[PC1]
+ip address del ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+#ifconfig ($IF_CLIENT) del ($IP_CLIENT_SEC) netmask 255.255.255.0
+

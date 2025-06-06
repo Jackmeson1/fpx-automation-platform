@@ -1,0 +1,26 @@
+<INIT>
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set webfilter ($WF_PROF_CATE)
+    next
+    edit ($POL_EXP_ISOLATE)
+        set webfilter ($WF_PROF_CATE)
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        unset webfilter
+    next
+    edit ($POL_EXP_ISOLATE)
+        unset webfilter
+    next
+end

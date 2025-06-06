@@ -1,0 +1,19 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status enable
+end
+
+<TEARDOWN>
+[FPX1]
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status disable
+end

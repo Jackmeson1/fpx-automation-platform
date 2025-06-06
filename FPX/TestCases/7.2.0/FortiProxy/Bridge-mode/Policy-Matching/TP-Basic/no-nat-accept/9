@@ -1,0 +1,55 @@
+#Verify non-http Matching the TP-polocy kernel matching only + bypass NAT – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+#SLEEP 5
+
+<TEST>
+[PC1]
+#ping
+@(expect_any = 0% packet loss, 25%)
+ping www.example.com -c4
+# matching ip with fqdn addr
+@(expect_any = 0% packet loss, 25%)
+ping SERVER2:IP_SERVER -c4
+# matching fqdn with ipsubnet address
+@(expect_any = 0% packet loss, 25%)
+ping SERVER1:FQDN -c4
+
+#ssh
+[FPX1]
+dia wad deb en c sess
+[PC1]
+@(expect = Last login; username = SERVER2:user; password = SERVER2:passwd)
+ssh SERVER2:user@SERVER2:IP_SERVER
+pwd
+exit
+[FPX1]
+@(expect = PC1:IP_CLIENT)
+dia wad deb clear
+
+@(wait = false)
+dia sniff p ($IF_INET) 'port 22' 4
+[PC1]
+@(expect = Last login; username = SERVER1:user; password = SERVER1:passwd)
+ssh SERVER1:user@SERVER1:FQDN
+exit
+[FPX1]
+SLEEP 1
+@(expect = PC1:IP_CLIENT; error = ($IP_MGMT))
+CTRL_C
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r

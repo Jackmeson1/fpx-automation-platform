@@ -1,0 +1,73 @@
+# Verify Matching explicit polocy (SSL-exempt and ACCEPT) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            edit 0
+                set fortiguard-cate 192
+        end
+end
+
+SLEEP 3
+
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, MATCH)
+curl -X DELETE http://www.httpbin.org/status/299 -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://www.httpbin.org/get -kvI -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv
+
+#repeat with https
+#server1 fqdn is not in the exempt cat list, deep scan and match dst url-list
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server2 fqdn is ssl-exempt in the list, no deep-inspection
+@(expect = HTTP/.*403; error = MATCH)
+curl https://SERVER2:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+#socks
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, MATCH)
+curl -X DELETE http://www.httpbin.org/status/299 --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://www.httpbin.org/get -kvI --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv
+
+#repeat with https
+#server1 fqdn is not in the exempt cat list, deep scan and match dst url-list
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server2 fqdn is ssl-exempt in the list, no deep-inspection
+@(expect = Can't complete; error = MATCH)
+curl https://SERVER2:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            purge
+    end
+end

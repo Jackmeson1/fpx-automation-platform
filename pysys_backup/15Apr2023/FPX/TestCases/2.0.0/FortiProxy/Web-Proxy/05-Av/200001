@@ -1,0 +1,55 @@
+# Verify av scan blocks eicar and response correct message in stream-scaning mode with http/https POST/PUT by wad
+<INIT>
+
+<TCID>
+200001,200002, 200055
+
+<SETUP>
+[FPX1]
+dia de app scanunit -1
+dia de en
+d de cr r
+d de cr cl
+SLEEP 2
+
+<TEST>
+#http/https POST multipart form, redirected to scanunitd
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -Fm=@[UPLOAD_EICAR] http://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -Fm=@[UPLOAD_EICAR] https://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+
+[FPX1]
+@(expect = job.*open)
+ENTER
+
+#http/https POST, handled by wad for urlencoded
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl --data-binary @[UPLOAD_EICAR] http://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl --data-binary @[UPLOAD_EICAR] https://[SERVER1:IP_SERVER]/[DUMMY] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+
+[FPX1]
+@(error = job.*open)
+ENTER
+
+#http/https PUT
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -T[UPLOAD_EICAR] http://[SERVER1:IP_SERVER]/[UPLOAD_PATH] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl -T[UPLOAD_EICAR] https://[SERVER1:IP_SERVER]/[UPLOAD_PATH] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+
+[FPX1]
+@(error = job.*open)
+ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+

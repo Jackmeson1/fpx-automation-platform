@@ -1,0 +1,46 @@
+#Verify http/https range request with legacy mode
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode legacy
+end
+
+dia sys scanunit debug all
+dia sys scan deb level v
+dia de en
+d de cr r
+d de cr cl
+SLEEP 5
+
+<TEST>
+#http/https GET
+[PC1]
+@(expect = HTTP/.*403)
+curl http://[SERVER1:IP_SERVER]/[EICAR_ZIP_48K] -r0- -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] -o /dev/null
+[FPX1]
+@(expect = su.*open)
+ENTER
+
+[PC1]
+@(expect = HTTP/.*2\d\d)
+curl https://[SERVER1:IP_SERVER]/[EICAR_ZIP_20M] -r0- -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] -o /dev/null
+[FPX1]
+@(expect = su.*open)
+ENTER
+
+
+<TEARDOWN>
+[FPX1]
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode default
+end
+dia de reset
+@(error=Traceback:)
+dia sys scan deb reset
+d de cr r

@@ -1,0 +1,63 @@
+#Forticache web proxy initial provision
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+FTP_PROXY_PORT = 2121
+
+<SETUP>
+[FPX1]
+config system interface
+    edit ($IF_CLIENT)
+        set explicit-ftp-proxy enable
+    next
+end
+ 
+config ftp-proxy explicit
+	set status enable
+	set incoming-port ($FTP_PROXY_PORT)
+	set ssl enable
+end
+
+conf fire policy
+    edit ($FTP_PROXY_PID)
+	set type explicit-ftp
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set utm-status enable
+        set profile-protocol-options ($PROF_PROTO_TEST)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av ($AV_PROF_TEST)
+        set ips ($IPS_TEST)
+    next
+    edit ($FTP_IBP_PID)
+	set type explicit-ftp
+        set dstintf $IF_SERVER) ($IF_INET)
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set utm-status enable
+        set users ($LOCAL_USER_DEFAULT)
+        set group ($LOCAL_GRP_DEFAULT)
+        set profile-protocol-options ($PROF_PROTO_TEST)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av ($AV_PROF_TEST)
+        set ips ($IPS_TEST)
+    next
+end
+
+<TEARDOWN>
+[FPX1]
+config system interface
+	edit ($IF_CLIENT)
+    	unset explicit-ftp-proxy
+    next
+end
+
+config firewall policy
+	purge
+end

@@ -1,0 +1,51 @@
+# Verify Matching the explicit polocy (deep inspection and accept) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+#SLEEP 5
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(error = MATCH)
+curl http://www.httpbin.org/get -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#socks
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*299, MATCH)
+curl -d'test' http://www.httpbin.org/status/299 -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox'
+
+
+#repeat with https
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*299, MATCH)
+curl -d'test' https://www.httpbin.org/status/299 -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox'
+#socks
+curl https://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(error = MATCH)
+curl https://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(error = MATCH)
+curl https://www.httpbin.org/get --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

@@ -1,0 +1,76 @@
+# Verify mis-matching the TP polocy (cert inspection and DENY) with inline-APP
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_DENY)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+    next
+    edit ($POL_TP_DEFAULT)
+        set status enable
+    next
+end
+
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*403; error = HTTP/.*[23]\d\d)
+curl http://drive.google.com -A'Firefox' -kv --http2 -IL
+@(expect = HTTP/.*403; error = HTTP/.*[23]\d\d)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL
+
+#continue matching policy after mis-matching the inline-app policy
+@(expect = HTTP/.*[23]\d\d; error = issuer.*[Ff]ortinet, DENY)
+curl https://www.google.com -A'Firefox' -kv -I --http2
+@(expect = HTTP/.*[23]\d\d; error = issuer.*[Ff]ortinet, DENY)
+curl -d test http://www.httpbin.org/post -A'Firefox' -kv
+
+
+#non-http request mismatching app policy, continue to match default allow
+@(expect_any = 0% packet loss, 25%)
+ping drive.google.com -c4
+
+@(expect = Last login; hostname = SERVER2:hostname; password = SERVER2:passwd; fail_action = stop)
+ssh SERVER2:user@SERVER2:FQDN
+exit
+
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:FQDN
+bye
+
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:FQDN
+bye
+
+<TEARDOWN>
+[FPX1]
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_DENY)
+        set status disable
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_TP_DEFAULT)
+        set status disable
+    next
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

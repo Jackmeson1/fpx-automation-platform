@@ -1,0 +1,63 @@
+#Verify http/https GET oversize file is blocked by scanunitd for legacy mode 
+<INIT>
+<TCID>
+200038, 200044 
+
+<SETUP>
+[FPX1]
+dia de cr read
+dia de cr cl
+exec log filter cat 2
+exec log delete-all
+
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode legacy
+end
+
+conf fire policy
+    edit [DEFAULT_PROXY_ID]
+	set profile-protocol-options [PROF_PROTO_OVERSIZE]
+end
+
+#dia de app scanunit -1
+#dia de en
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*403, file size limit)
+curl http://[SERVER1:IP_SERVER]/[OVERSIZE_FILE] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403, file size limit)
+curl http://[SERVER1:IP_SERVER]/[OVERSIZE_ZIP] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+exec log display
+EXPECT uncompressed size limit, Size limit is exceeded
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, file size limit)
+curl https://[SERVER1:IP_SERVER]/[OVERSIZE_FILE] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403, file size limit)
+curl https://[SERVER1:IP_SERVER]/[OVERSIZE_ZIP] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+exec log display
+EXPECT uncompressed size limit, Size limit is exceeded
+exec log delete-all
+
+
+<TEARDOWN>
+[FPX1]
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode default
+end
+
+conf fire policy
+    edit [DEFAULT_PROXY_ID]
+	set profile-protocol-options [PROF_PROTO_TEST]
+end
+	
+@(error = Backtrace:)
+dia de cr read
+
+dia de reset

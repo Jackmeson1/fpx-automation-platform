@@ -1,0 +1,58 @@
+# Verify socks proxy – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+conf web-proxy explicit
+  edit web-proxy
+    set socks en
+end
+
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+SLEEP 5
+
+<TEST>
+#http GET/POST match server1 path /files
+[PC1]
+@(expect = HTTP/.*200)
+curl http://SERVER1:FQDN/($TEST_FILE) -kv --http1.1 --socks5 FPX1:IP_CLIENT:($PROXY_PORT)
+#expect -e "HTTP/.*200" -e MATCH -t 3 -fail unmatch -a next 
+@(expect = HTTP/.*200)
+curl SERVER1:FQDN/($TEST_FILE) -kv --http2 --http1.1 --socks5 FPX1:IP_CLIENT:8080
+@(expect = HTTP/.*200)
+curl SERVER1:IP_SERVER/($TEST_FILE) -kv -d'test data' --http1.1 --socks5 FPX1:IP_CLIENT:8080
+@(expect = HTTP/.*20\d)
+curl SERVER1:IP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF) --http1.1 --socks5 FPX1:IP_CLIENT:8080
+
+@(expect = HTTP/.*200)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv --http1.1 --http1.1 --socks5 FPX1:IP_CLIENT:8080
+@(expect = HTTP/.*200)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv --http2 --http1.1 --socks5 FPX1:IP_CLIENT:8080
+@(expect = HTTP/.*200)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv -d'test data' --http1.1 --socks5 FPX1:IP_CLIENT:8080
+@(expect = HTTP/.*20\d)
+curl SERVER1:FQDN/($UPLOAD_PATH) -kv -T($UPLOAD_PDF) --http1.1 --socks5 FPX1:IP_CLIENT:8080
+
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+
+<TEARDOWN>
+[FPX1]
+conf web-proxy explicit
+  edit web-proxy
+    set socks dis
+end
+SLEEP 5
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

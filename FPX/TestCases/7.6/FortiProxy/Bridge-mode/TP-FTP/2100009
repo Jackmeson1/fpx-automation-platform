@@ -1,0 +1,185 @@
+#Verify ftp matches policy  + no-nat/snat  and utm + inspect data channel
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+config firewall profile-protocol-options
+    edit ($PROF_PROTO_FTP)
+        config ftp
+            set explicit-ftp-tls enable
+        end
+    next
+end
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set utm en
+    set av ($AV_PROF_TEST)
+    set ips ($IPS_TEST)
+    set ssl-ssh-profile ($SSL_DEEP_TEST)
+  next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+#nat table:
+# server2 mgmt ip -- bypass nat
+# server2 fqdn -- nat pool 
+# server1 fqdn -- unmatched
+
+#nat
+[PC1]
+#unmatched fqdn(server1)
+#@(error = 230; user = SERVER1:user; password = SERVER1:passwd timeout = 10; expect_timeout=true)
+@(expect = timed out; error = 230; user = SERVER1:user; password = SERVER1:passwd)
+ftp -d -z nossl SERVER1:FQDN
+bye
+#@(error = 230; user = SERVER1:user; password = SERVER1:passwd; timeout = 10; expect_timeout=true)
+@(expect = timed out; error = 230; user = SERVER1:user; password = SERVER1:passwd)
+ftp -d SERVER1:FQDN
+bye
+
+#plain-text bypass nat (server2.ip_mgmt)
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:IP_MGMT
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+#passive
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+@(expect = 200)
+ascii
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+#active
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 200)
+bin
+@(expect = 550)
+get ips_test_file
+bye
+
+#plain-text nated pool (server2.fqdn)
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp -d -z nossl SERVER2:FQDN
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+#passive
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+@(expect = 200)
+ascii
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+#active
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 200)
+bin
+@(expect = 550)
+get ips_test_file
+bye
+
+#ftps bypass nat (server2.ip_mgmt)
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:IP_MGMT
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+#passive
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+@(expect = 200)
+ascii
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+#active
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 200)
+bin
+@(expect = 550)
+get ips_test_file
+bye
+
+#ftps nated pool (server2.fqdn)
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:FQDN
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+#passive
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+@(expect = 200)
+ascii
+@(expect = 550)
+get eicar.com
+@(expect = 550)
+get ips_test_file
+#active
+pass
+@(expect = 550)
+get eicar.com
+@(expect = 200)
+bin
+@(expect = 550)
+get ips_test_file
+bye
+
+
+<TEARDOWN>
+[FPX1]
+config firewall profile-protocol-options
+    edit ($PROF_PROTO_FTP)
+        config ftp
+            set explicit-ftp-tls disable
+        end
+    next
+end
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set utm dis
+    set ssl-ssh-profile no-inspection
+  next
+end
+dia de reset
+@(error=Backtrace:)
+d de cr r
+dia de cr cl

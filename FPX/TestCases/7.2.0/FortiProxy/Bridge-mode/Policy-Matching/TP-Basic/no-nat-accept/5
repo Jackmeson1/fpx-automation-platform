@@ -1,0 +1,49 @@
+# Verify GET/POST/PUT Matching the TP-polocy fqdn srcaddr +  bypass NAT - ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+#default fixture set srcaddr to fqdn, only test wild-card fqdn here
+#SLEEP 1
+
+<TEST>
+#http
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/($TEST_FILE) -kv --http1.1
+@(expect = HTTP/.*200, MATCH)
+curl SERVER1:IP_SERVER/($TEST_FILE) -kv -d'test data'
+@(expect = HTTP/.*20\d, MATCH)
+curl SERVER1:IP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+#https
+@(expect = HTTP/.*206, MATCH)
+curl https://www.example.com -kv --http1.1 -r1-9
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/($TEST_FILE) --http2 -kv -d'test data'
+@(expect = HTTP/.*20\d, MATCH)
+curl SERVER1:FQDN/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set srcaddr PC1:FQDN
+end

@@ -1,0 +1,203 @@
+# Verify cate filter (monitor) via socks isolate policy + cert inspection
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+# Shopping - block   amazon.com -> subcate
+# Travel - block
+# Search engine - monitor   google.com -> subcate
+# IT - monitor
+# News - Authenticate       bbc.com -> subcate
+# Business - Authenticate
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+    next
+end
+
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+#dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($LOG_WAITTIME)
+
+<TEST>
+#monitor action:  no-subcate fqdn (www.example.com); fqdn with subcate (www.google.com); match sub-cate url (www.amazon.com/aws)
+[PC1]
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl http://www.example.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl http://www.google.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_allow, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+#local resolve + plain-http and cert inspect
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl http://www.google.com -kv --socks4 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_allow, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl http://www.amazon.com/aws -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_allow, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+#https
+[PC1]
+#fqdn cate monitor
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl https://www.example.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -I
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+#fqdn cate monitor
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl https://www.google.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_allow, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+#local-resolved
+[PC1]
+@(expect = HTTP/.*[23]\d\d, ISOLATE, FPX2:hostname)
+curl https://www.google.com -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_allow, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+#only rate fqdn, result to be block
+@(expect = HTTP/.*403; error = ISOLATE, FPX2:hostname)
+curl https://www.amazon.com/aws -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = ftgd_blk, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status disable
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+end

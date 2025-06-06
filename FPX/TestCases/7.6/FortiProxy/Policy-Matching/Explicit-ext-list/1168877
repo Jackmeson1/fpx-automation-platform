@@ -1,0 +1,112 @@
+# Verify Matching the explicit polocy (deep inspection and isolate) with external url list address -924644
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+end
+SLEEP 12
+
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -d'test' http://www.httpbin.org/status/299 -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox'
+
+#repeat with https
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#match host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[FPX2]
+dia wad deb en cat sess
+d de en
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#doesn't even match the host in the url-list, won't connect fw-server (924644)
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://www.google.com/maps -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+
+#socks
+[FPX1]
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -d'test' http://www.httpbin.org/status/299 -kv --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox'
+
+#repeat with https
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#match host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[FPX2]
+dia wad deb en cat sess
+d de en
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#doesn't even match the host in the url-list, won't connect fw-server (924644)
+[PC1]
+@(expect = Can't complete; error = ISOLATE)
+curl https://www.google.com --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+[PC1]
+@(expect = Can't complete; error = ISOLATE)
+curl https://www.google.com/maps --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+
+<TEARDOWN>
+[FPX1]
+dia deb reset
+@(error=Backtrace)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status disable
+end
+
+[FPX2]
+dia deb reset

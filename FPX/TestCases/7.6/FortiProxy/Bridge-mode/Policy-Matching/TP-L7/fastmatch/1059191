@@ -1,0 +1,94 @@
+# Verify HTTP/HTTPS Matching the TP polocy (session-auth + ssl-exempt + isolate) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_ISOLATE)
+        set status enable
+    	set groups grp_abc
+end
+
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+	    edit 0
+                set fortiguard-cate 41
+            next
+	    edit 0
+                set fortiguard-cate 52
+        end
+end
+
+SLEEP 4
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*200, MATCH)
+@(expect = HTTP/.*401)
+curl http://www.google.com/mail -A'Firefox' -kv --http2
+@(expect = HTTP/.*[23]\d\d, FPX2:hostname)
+curl http://www.google.com/mail -A'Firefox' -kv --http2 -ua:a -IL --max-redirs 1 --location-trusted
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1 -ub:b
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*401)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2
+@(expect = HTTP/.*200, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2 -uc:c -IL
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.ubc.ca -A'Firefox' -kv -I --http2 -ua:a
+
+#https
+#need deep scan to determine category, cert inspection won't do deep scan, action isolate could not be enforced, accept/deny based on host part category
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail -A'Firefox' -kv -IL --max-redirs 1 --http1.1 -ua:a --location-trusted
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403)
+curl https://www.google.com/maps -A'Firefox' -kv --http2 -ua:a
+@(expect = HTTP/.*401)
+curl https://mail.google.com/mail -A'Firefox' -kv --http2
+
+#host category matches, forwarded to isolator
+#ssl connect to orig server @ partial match
+@(expect = HTTP/.*200, ISOLATE; error = FPX2:hostname)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2 -ua:a
+@(expect = HTTP/.*401)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_ISOLATE)
+    	unset groups
+        set status disable
+end
+
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+	    purge
+    end
+end

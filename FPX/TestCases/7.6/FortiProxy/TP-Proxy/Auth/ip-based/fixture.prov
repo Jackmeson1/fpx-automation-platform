@@ -1,0 +1,21 @@
+
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf auth rule
+  edit AUTH_HTTP
+    unset ip
+end
+
+SLEEP 10
+
+<TEARDOWN>
+[FPX1]
+conf auth rule
+  edit AUTH_HTTP
+    set ip dis
+end

@@ -1,0 +1,11 @@
+#FortiProxy explicit L7 policy - disable fast match
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+SLEEP 12
+
+<TEARDOWN>

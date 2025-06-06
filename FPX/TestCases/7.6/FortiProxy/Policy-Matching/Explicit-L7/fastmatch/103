@@ -1,0 +1,48 @@
+# Verify HTTPS Matching the socks explicit polocy (CERTIFICATE inspection and ACCEPT) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+        # socks proxy could not match srcaddr L7 without deep inspection
+	set srcaddr all
+end
+SLEEP 5
+
+<TEST>
+[PC1]
+#need deep scan to determine category, but it is configured as cert inspection
+#@(expect = HTTP/.*403; fail_action = continue)
+@(expect = Can't complete; error = HTTP/.[23]\d\d)
+curl https://www.google.com/mail --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+#@(expect = HTTP/.*403)
+@(expect = Can't complete; error = HTTP/.[23]\d\d)
+curl https://www.google.com/mpas --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#Category Information, host=*.httpbin.org is determined by host only
+@(expect = HTTP/.*200)
+curl -d'test' https://www.httpbin.org/post --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#@(expect = HTTP/.*403)
+@(expect = Can't complete; error = HTTP/.[23]\d\d)
+curl https://www.nghttp2.org/httpbin/get --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set srcaddr client_firefox mgmt_header_ftnt
+end

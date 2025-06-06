@@ -1,0 +1,110 @@
+# Verify isolate policy + session-based basic authz header is not stripped when the same username is authenticated on FPX with non-basic auth method
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+conf fire pol
+    edit ($DEFAULT_TP_IBP)
+	set status disable
+    next
+    edit ($DEFAULT_TP_IBP_ISOLATE)
+	set status enable
+end
+
+config authentication rule
+    edit "AUTH_HTTP"
+        set active-auth-method "digest_local"
+end
+
+dia wad user cl
+dia fire auth cl
+
+SLEEP 5
+
+<TEST>
+[PC1]
+#base64 values
+echo -n 'a:a' | base64
+setvar -e base64\s+(\w+) -to ua_b64
+[LOCAL]
+authz_basic_a = Authorization: Basic PC1:ua_b64
+
+[PC1]
+#authenticate digest user a on FPX
+@(expect = HTTP/.*[23]\d\d)
+curl http://SERVER1:FQDN/files/testfile -kv -ua:a --digest
+[FPX1]
+@(expect = user name.*:)
+dia wad user list
+
+#HTTP request with Authz of user a is stripped but other is not
+#GET
+[SERVER1]
+#tcpflow -i($IF_SERVER) -c
+SENDLINE tcpflow -i($IF_SERVER) -c
+[PC1]
+@(expect = HTTP/.*200\sOK)
+curl http://SERVER1:FQDN/files/testfile -kv -ua:a --digest --http2 -: http://SERVER1:FQDN -kvI -ua:a --http2
+[SERVER1]
+@(expect = ($authz_basic_a))
+CTRL_C
+
+#POST
+[SERVER1]
+#tcpflow -i($IF_SERVER) -c
+SENDLINE tcpflow -i($IF_SERVER) -c
+[PC1]
+@(expect = HTTP/.*200\sOK)
+curl -d'test' http://SERVER1:FQDN/files/testfile -kv -ua:a --digest -: -d'test' http://SERVER1:FQDN/files/testfile -kv -ua:a --http1.1
+[SERVER1]
+@(expect = ($authz_basic_a))
+CTRL_C
+
+#HTTP request with Authz of user a is stripped but other is not
+[FPX1]
+dia wad deb en c http
+d de en
+[PC1]
+@(expect = HTTP/.*200\sOK)
+curl https://SERVER1:FQDN/files/testfile -kv -ua:a --digest -: https://SERVER1:FQDN -kvI -ua:a --http1.1
+[FPX1]
+@(expect = to\sserver[\s\S]*($authz_basic_a))
+ENTER
+
+[PC1]
+@(expect = HTTP/.*2\d\d)
+curl -T upload_testfile https://SERVER1:FQDN/upload/ -kv --http2 -ua:a --digest -: -Tupload_testfile https://SERVER1:FQDN/upload/ -kv -ua:a --http2
+[FPX1]
+@(expect = to\sserver[\s\S]*($authz_basic_a))
+ENTER
+dia wad deb cl
+dia de dis
+
+
+<TEARDOWN>
+[FPX1]
+config authentication rule
+    edit "AUTH_HTTP"
+        set active-auth-method "basic_local"
+end
+
+conf fire pol
+    edit ($DEFAULT_TP_IBP)
+	set status enable
+    next
+    edit ($DEFAULT_TP_IBP_ISOLATE)
+	set status disable
+end
+
+dia wad user cl
+dia fire auth cl
+
+dia de reset
+@(error=Backtrace:)
+d de cr r

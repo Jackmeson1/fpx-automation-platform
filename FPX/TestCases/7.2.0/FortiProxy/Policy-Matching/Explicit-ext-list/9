@@ -1,0 +1,161 @@
+# Verify Matching explicit polocy (ssl-exempt and isolate) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+end
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            edit 0
+                set fortiguard-cate 192
+        end
+end
+
+SLEEP 8
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/status/299 -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+#fw-server, need to deep inspect when matching host part -924644
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server2 fqdn is ssl-exempt, no deep scan and could not match url path
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER2:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+#server1 fqdn is not ssl-exempted, deep instpect and connect to fw-server, fail to match urlpath though
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -I
+
+[FPX2]
+dia wad deb en cat sess
+d de en
+#server2 fqdn is ssl-exempt, no deep scan and could not match url path
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER2:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+#server1 is not exempt, match dstaddr host part, connect to fw-server, need to deep inspect when matching host part -924644
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#server1 is not exempt, match dstaddr host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#doesn't even match the host in the url-list, won't connect fw-server (924644)
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://www.google.com/maps -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+
+
+#socks
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/status/299 --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+#fw-server, need to deep inspect when matching host part -924644
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#server2 fqdn is ssl-exempt, no deep scan and could not match url path
+@(expect = Can't complete; error = ISOLATE)
+curl https://SERVER2:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+#server1 fqdn is not ssl-exempted, deep instpect and connect to fw-server, fail to match urlpath though
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -I
+
+[FPX2]
+dia wad deb en cat sess
+d de en
+#server2 fqdn is ssl-exempt, no deep scan and could not match url path
+[PC1]
+@(expect = Can't complete; error = ISOLATE)
+curl https://SERVER2:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+#server1 is not exempt, match dstaddr host part, connect to fw-server, need to deep inspect when matching host part -924644
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#server1 is not exempt, match dstaddr host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(expect = SERVER1:FQDN)
+ENTER
+
+#doesn't even match the host in the url-list, won't connect fw-server (924644)
+[PC1]
+@(expect = Can't complete; error = ISOLATE)
+curl https://www.google.com/maps --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = google)
+ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status disable
+end
+conf firewall ssl-ssh-profile
+    edit ($SSL_DEEP_TEST)
+        conf ssl-exempt
+            purge
+    end
+end

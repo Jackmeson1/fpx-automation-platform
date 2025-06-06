@@ -1,0 +1,59 @@
+# Verify HTTPS Matching the socks explicit polocy (session-auth + cert inspection and accept) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    set groups grp_abc
+    set ssl-ssh-profile ($SSL_CERT_TEST)
+    set srcaddr all
+end
+config auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status enable
+end
+
+
+SLEEP 5
+
+<TEST>
+#need deep scan to determine category, but it is configured as cert inspection
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ua:a
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403)
+curl https://www.google.com/maps --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+@(expect = HTTP/.*[23]\d\d\s(?!Connect))
+curl https://mail.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+@(expect = HTTP/.*407)
+curl -d'test' https://www.httpbin.org/post --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+#@(expect = HTTP/.*403)
+@(expect = Can't complete; error = HTTP/.*[23]\d\d)
+curl https://www.ubc.ca --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    unset groups
+    set ssl-ssh-profile ($SSL_DEEP_TEST)
+    set srcaddr client_firefox mgmt_header_ftnt
+end
+config auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status disable
+end
+

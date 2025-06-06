@@ -1,0 +1,61 @@
+# Verify HTTP/HTTPS Matching the TP polocy (deep inspection and isolate) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_ISOLATE)
+        set status enable
+end
+SLEEP 8
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+@(expect = HTTP/.*[23]\d\d, FPX2:hostname)
+curl http://www.google.com/mail -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*200, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2
+# when host part is unmatch
+@(expect = HTTP/.*403; error = HTTP/.*[23]\d\d)
+curl http://www.ubc.ca -A'Firefox' -kv -I --http2
+
+#https
+#need deep scan to determine category, but action isolate could not be enforced
+@(expect = HTTP/.*[23]\d\d, ISOLATE)
+curl https://www.google.com/mail -A'Firefox' -kv --http1.1
+@(error = ISOLATE)
+curl https://www.google.com -A'Firefox' -kv --http2
+
+@(expect = HTTP/.*200, ISOLATE)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_ISOLATE)
+        set status disable
+end
+

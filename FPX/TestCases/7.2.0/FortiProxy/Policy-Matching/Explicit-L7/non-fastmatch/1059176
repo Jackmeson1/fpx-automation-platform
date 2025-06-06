@@ -1,0 +1,80 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with dst and source address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf fire policy
+  edit ($POL_EXP_DEFAULT)
+    set status enable
+end
+
+SLEEP 15
+
+<TEST>
+[PC1]
+#url path matched
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_MGMT:($PROXY_PORT) -H'MYHEADER:FTNT' -kv --http2
+#expect -e "HTTP/.*200 OK" -e MATCH -t 3 -fail unmatch -a next 
+#match dst host only
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:FQDN -d'test' -x FPX1:IP_MGMT:($PROXY_PORT) -H'MYHEADER:FTNT' -kv --http1.1
+#dst host unmatch
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:IP_INET/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+
+#match src host only
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_MGMT:($PROXY_PORT) -kv --http2
+#dst host unmatch
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -kv --http1.1
+#src host unmatched
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_INET:($PROXY_PORT) -kv
+#Src Host (UA) unmatch
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -kv --http1.1
+
+
+#https
+#url path matched
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/files/testfile -x FPX1:IP_MGMT:($PROXY_PORT) -H'MYHEADER:FTNT' -kv --http2
+
+#match dst host only - deep inspected but L7 unmatched, move on to defualt pol
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl https://SERVER1:FQDN -d'test' -x FPX1:IP_MGMT:($PROXY_PORT) -H'MYHEADER:FTNT' -kv --http1.1
+#dst host unmatch - no deep inspection, match default pol
+@(expect=HTTP/.*200 OK; error= MATCH, DEFAULT)
+curl https://SERVER1:IP_INET/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http1.1
+
+#match src host only - deep inpected but L7 unmatched, move on to defualt pol
+@(expect=DEFAULT, HTTP/.*200 OK)
+curl https://SERVER1:FQDN/files/testfile -x FPX1:IP_MGMT:($PROXY_PORT) -kv --http2
+#Src Host unmatch
+@(expect=HTTP/.*200 OK; error= MATCH, DEFAULT)
+curl https://SERVER1:FQDN/files/testfile -x FPX1:IP_INET:($PROXY_PORT) -kv --http1.1
+#Src Host (UA) unmatch
+@(expect=HTTP/.*200 OK; error= MATCH, DEFAULT)
+curl https://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -kv --http1.1
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+  edit ($POL_EXP_DEFAULT)
+    set status disable
+end
+

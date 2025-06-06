@@ -1,0 +1,11 @@
+
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+SLEEP 10
+
+<TEARDOWN>

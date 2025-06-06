@@ -1,0 +1,76 @@
+# Verify http/https session-based local basic auth via socks proxy v5 with isolate
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia wad user cl
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+	set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+	set status enable
+    next
+    edit ($POL_EXP_LAST)
+        set status enable
+    next
+end
+
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP 8
+
+<TEST>
+#http/https GET with socks v4/v5
+
+[PC1]
+@(expect = authentication method)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2
+@(expect = HTTP.*200, ISOLATE)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+@(expect = HTTP.*200, DEFAULT)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ux:x
+@(expect = authentication method)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+@(expect = HTTP.*200, ISOLATE)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+@(expect = HTTP.*200, DEFAULT)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ux:x
+
+@(expect = request rejected)
+curl https://[SERVER1:FQDN]/($TEST_FILE) -kv --socks4 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = request rejected)
+curl http://[SERVER1:FQDN]/($TEST_FILE) -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2
+
+@(expect = authentication method)
+curl https://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2
+@(expect = HTTP.*200, ISOLATE)
+curl https://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+@(expect = HTTP.*200, DEFAULT)
+curl https://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ux:x
+@(expect = authentication method)
+curl -T($UPLOAD_TEST_FILE) https://[SERVER1:FQDN]/($UPLOAD_PATH) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+@(expect = HTTP.*200, ISOLATE)
+curl https://[SERVER1:FQDN]/($TEST_FILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ua:a -d dumy_post
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+	set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+	set status disable
+    next
+    edit ($POL_EXP_LAST)
+        set status disable
+    next
+end
+
+dia wad user cl
+@(error=Backtrace)
+d de cr r
+

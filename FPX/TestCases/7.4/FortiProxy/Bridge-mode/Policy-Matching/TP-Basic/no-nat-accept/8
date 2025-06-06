@@ -1,0 +1,84 @@
+#Verify non-http Matching the TP-polocy kernel matching only + bypass NAT – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    unset utm
+end
+
+SLEEP 5
+
+<TEST>
+[PC1]
+#ping
+@(expect_any = 0% packet loss, 25%)
+ping www.fishingwithrod.com -c4
+# matching ip with fqdn addr
+@(expect_any = 0% packet loss, 25%)
+ping SERVER2:IP_SERVER -c4
+# matching fqdn with ipsubnet address
+@(expect_any = 0% packet loss, 25%)
+ping SERVER1:FQDN -c4
+
+#ssh
+[FPX1]
+dia wad deb en c sess
+[PC1]
+@(expect = Last login; hostname = SERVER1:hostname; password = SERVER1:passwd; fail_action = stop)
+ssh SERVER1:user@SERVER1:FQDN
+pwd
+exit
+[FPX1]
+@(error = PC1:IP_CLIENT)
+dia wad deb clear
+
+@(wait = false)
+dia sniff p ($IF_INET) 'port 22' 4
+[PC1]
+@(expect = Last login; hostname = SERVER2:hostname; password = SERVER2:passwd; fail_action = stop)
+ssh SERVER2:user@SERVER2:IP_SERVER
+exit
+[FPX1]
+SLEEP 1
+@(expect = PC1:IP_CLIENT; error = ($IP_MGMT))
+CTRL_C
+
+#ftp
+[PC1]
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp -d SERVER2:FQDN
+@(expect = 250) 
+cd ftpfolder
+@(expect = 226)
+get eicar.com
+pass
+@(expect = 226)
+get eicar.com
+@(expect = 200)
+ascii
+@(expect = 226)
+get eicar.com
+exit
+
+#dns
+
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set utm en
+    set av-profile ($AV_PROF_TEST)
+end
+dia de reset
+@(error=Backtrace:)
+d de cr r

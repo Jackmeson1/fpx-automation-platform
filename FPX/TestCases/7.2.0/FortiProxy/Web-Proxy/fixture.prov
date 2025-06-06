@@ -1,0 +1,174 @@
+#Forticache web proxy initial provision
+<INIT>
+[LOCAL]
+TEST_IF = port5
+IP_TEST = 10.10.6.6
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+PROXY_PORT = 8080
+#HTTPS_PROXY_PORT = 8080
+FTP_PROXY_PORT = 2121
+
+<SETUP>
+[FPX1]
+config system interface
+	edit [IF_CLIENT]
+        set explicit-web-proxy enable
+        set explicit-ftp-proxy enable
+    next
+	edit [IF_MGMT]
+        set explicit-web-proxy enable
+        set explicit-ftp-proxy enable
+    next
+end
+ 
+config web-proxy explicit
+	edit web-proxy
+		set interface [IF_CLIENT]
+		set ftp-over-http enable
+		set socks enable
+		set status enable
+		set http-incoming-port [PROXY_PORT]
+		set pac-file-server-status enable
+        set pac-file-data "testing"
+		unset https-incoming-port
+		unset socks-incoming-port
+		unset ftp-incoming-port
+	next
+	edit [WP_MGMT]
+		set pac-file-server-status enable
+        set pac-file-data "proxy on mgmt interface"		
+end
+
+config ftp-proxy explicit
+	set status enable
+	set incoming-port [FTP_PROXY_PORT]
+	set ssl enable
+end
+
+config fire policy
+    purge
+    edit ($DEFAULT_PROXY_ID)
+    	set type explicit-web
+    	set explicit-web-proxy web-proxy
+        set dstintf ($IF_SERVER) ($IF_INET)
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service webproxy
+        set utm en
+        set profile-protocol-options ($PROF_PROTO_TEST)
+        #set av [AV_PROF_TEST]
+        #set webfilter-profile [WF_PROF_DEFAULT]
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set logtraffic all
+        set log-http-transaction enable
+        set webproxy-profile "resp_match"
+        #set ips [IPS_TEST]
+    next
+    edit ($POL_EXP_DENY)
+	set status disable
+        set type explicit-web
+        set dstintf any
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set explicit-web-proxy "web-proxy"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set log-http-transaction enable
+        set logtraffic all
+        set action deny
+    next
+    edit ($POL_EXP_ISOLATE)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy web-proxy
+        set dstintf any
+        set srcaddr all
+        set dstaddr all
+        set schedule always
+        set action isolate
+	set isolator ($ISOLATE_FPX2)
+        set service webproxy
+        set webproxy-profile resp_isolate
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+	set utm enable
+        set log-http-transaction enable
+        set logtraffic all
+    next
+    edit ($POL_EXP_REDIRECT)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy web-proxy
+        set dstintf any
+        set srcaddr all
+        set dstaddr all
+        set action redirect
+        set schedule always
+        set service webproxy
+	set redirect-url https://[SERVER2:FQDN]/($TEST_FILE)
+    next
+    edit ($POL_EXP_LAST)
+	set status disable
+        set type explicit-web
+        set explicit-web-proxy "web-proxy"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "webproxy"
+        set utm-status enable
+        set webproxy-profile "resp_default"
+        set log-http-transaction enable
+        set logtraffic all
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($FTP_PROXY_PID)
+	set type explicit-ftp
+        set dstintf [IF_SERVER] [IF_INET]
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set utm-status enable
+        set profile-protocol-options [PROF_PROTO_TEST]
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        #set av [AV_PROF_TEST]
+        #set ips [IPS_TEST]
+        set logtraffic all
+    next
+#    edit [WEBPROXY_REDIRECT_ID]
+#    	set type explicit-web
+#    	set explicit-web-proxy web-proxy
+#	    set dstintf any
+#        set srcaddr all
+#        set dstaddr [ADDR_SERVER1]
+#        set action redirect
+#        set redirect-url https://[SERVER2:IP_SERVER]/files/test]
+#        set schedule always
+#        set service webproxy
+#        set logtraffic all
+#    next
+end
+
+<TEARDOWN>
+config system interface
+	edit [IF_CLIENT]
+        unset explicit-web-proxy
+    	unset explicit-ftp-proxy
+    next
+    edit [IF_MGMT]
+    	unset explicit-web-proxy
+    	unset explicit-ftp-proxy
+    next
+end
+
+config firewall policy
+	purge
+end

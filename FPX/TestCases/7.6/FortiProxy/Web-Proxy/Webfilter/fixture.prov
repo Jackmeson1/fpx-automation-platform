@@ -1,0 +1,122 @@
+<INIT>
+[GLOBAL]
+WF_PROF_CATE = wf_cate
+WF_PROF_URL = wf_url
+WF_PROF_TEST = wf_test
+WF_PROF_BWORD = wf_bword
+
+WEBFILTER_PATH = webfilter
+URLFILTER_PATH_BLOCK = webfilter/urlfilter/block
+URLFILTER_PATH_ALLOW = webfilter/urlfilter/allow
+URLFILTER_PATH_EXEMPT = webfilter/urlfilter/exempt
+URLFILTER_PATH_MONITOR = webfilter/urlfilter/monitor
+URLFILTER_PATH_AUTH = webfilter/urlfilter/auth
+
+<SETUP>
+[FPX1]
+config webfilter content
+    edit ($BWORD_TABLE_DEFAULT)
+        config entries
+            edit ($BWORD_DEFAULT)
+                set pattern-type regexp
+                set status enable
+            next
+        end
+        set name "bword_default"
+    next
+    edit ($BWORD_TABLE_FTNT)
+        config entries
+            edit ($BWORD_FTNT)
+                set pattern-type regexp
+                set status enable
+            next
+        end
+        set name "bword_ftnt"
+    next
+end
+
+config webfilter urlfilter
+    edit ($URLFILTER_TEST)
+        set name "url-filter-test"
+        config entries
+            purge
+            edit 0
+                set url ($URLFILTER_PATH_BLOCK) 
+                set type regex
+                set action block
+            next
+            edit 0
+                set url ($URLFILTER_PATH_MONITOR)
+                set type regex
+                set action monitor
+            next
+            edit 0
+                set url ($URLFILTER_PATH_ALLOW)
+                set type regex
+                set action allow
+            next
+            edit 0
+                set url ($URLFILTER_PATH_EXEMPT)
+                set type regex
+                set action exempt
+            next
+        end
+    next
+end
+
+config webfilter profile
+    edit ($WF_PROF_TEST)
+        config web
+            set bword-table ($BWORD_TABLE_DEFAULT)
+            set urlfilter-table ($URLFILTER_TEST)
+        end
+        config ftgd-wf
+            unset options
+            conf filters
+		purge
+                #del 22
+                #del 23
+            end
+        end
+    next
+    edit ($WF_PROF_CATE)
+        config ftgd-wf
+            unset options
+            config filters
+	        purge
+                edit 1
+                    # Search engine - monitor 
+	            set category 41
+		next
+                edit 2
+                    # Shopping - block
+                    set category 42
+                    set action block
+                next
+                edit 3
+                    # News - Authenticate
+                    set category 36
+                    set action authenticate
+                    set auth-usr-grp "grp_abc"
+                next
+                edit 4
+                    # IT - monitor
+                    set category 52
+                next
+                edit 5
+                    # Travel - block
+                    set category 47
+                    set action block
+                next
+                edit 6
+                    # Business - Authenticate
+                    set category 49
+                    set action authenticate
+                    set auth-usr-grp "grp_abc"
+                next
+            end
+        end
+    next
+end
+
+<TEARDOWN>

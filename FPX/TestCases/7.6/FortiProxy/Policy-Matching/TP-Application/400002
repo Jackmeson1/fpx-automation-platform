@@ -1,0 +1,44 @@
+# Verify Matching the TP polocy with inline-APP (CERTIFICATE inspection and ACCEPT)
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf firewall policy
+    edit ($POL_TP_MATCH)
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*[23]\d\d, MATCH; error = HTTP/.*4\d\d)
+curl http://drive.google.com -A'Firefox' -kv --http2 -I
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I
+@(expect = HTTP/.*403)
+curl http://www.example.com -A'Firefox' -kv -I --http1.1
+
+#https
+@(expect = HTTP/.*[23]\d\d; error = issuer.*[Ff]ortinet, MATCH)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL
+@(expect = HTTP/.*403)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf firewall policy
+    edit ($POL_TP_MATCH)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+end

@@ -1,0 +1,21 @@
+#FortiProxy transprant policy
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+	set status enable
+end
+
+SLEEP 10
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+	set status disable
+end

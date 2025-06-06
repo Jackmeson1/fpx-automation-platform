@@ -1,0 +1,45 @@
+# Verify HTTP/HTTPS Matching the TP polocy (deep inspection and accept) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+#SLEEP 5
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+@(expect = HTTP/.*[23]\d\d, MATCH)
+curl http://www.google.com/mail -A'Firefox' -kv --http2
+#expect -e "HTTP/.*[23]\d\d" -e MATCH -t 3 -fail unmatch -a continue 
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.sfu.ca -A'Firefox' -kv -I --http2
+
+#repeat with https
+@(expect = HTTP/.*(3\d\d|OK), MATCH)
+curl https://www.google.com/mail -A'Firefox' -kv -I --http1.1
+@(error = MATCH)
+curl https://www.google.com -A'Firefox' -kv --http2
+
+@(expect = HTTP/.*200, MATCH)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl https://www.sfu.ca -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

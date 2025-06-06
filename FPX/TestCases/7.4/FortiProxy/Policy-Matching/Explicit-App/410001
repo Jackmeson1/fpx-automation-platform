@@ -1,0 +1,47 @@
+# Verify mis-matching the explicit policy (deep inspection and accept) with inline-APP
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+conf fire pol
+    edit ($POL_EXP_DEFAULT)
+        set status enable
+end
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*[23]\d\d, MATCH; error = HTTP/.*4\d\d)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL --socks5 FPX1:IP_CLIENT:($PROXY_PORT)
+
+#continue matching policy after mis-matching the inline-app policy
+@(expect = HTTP/.*[23]\d\d, DEFAULT; error = MATCH)
+curl https://www.google.com -A'Firefox' -kv -I --http2 --socks5-h FPX1:IP_CLIENT:($PROXY_PORT)
+@(expect = HTTP/.*[23]\d\d, DEFAULT; error = MATCH)
+curl -d test http://www.httpbin.org/post -A'Firefox' -kv -x https://FPX1:IP_CLIENT:($PROXY_PORT) --proxy-in
+@(expect = HTTP/.*[23]\d\d, DEFAULT; error = MATCH)
+curl http://www.google.com -H'MyHeader:FTNT' -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -LI
+
+#foh request mismatching app policy, continue to match default allow
+@(expect = HTTP/.*[23]\d\d, DEFAULT; error = MATCH)
+curl https://SERVER2:FQDN/($TEST_FILE) -kv --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -AFirefox
+@(expect = HTTP/.*[23]\d\d, DEFAULT; error = MATCH)
+curl ftp://SERVER2:FQDN/($FTPFOLDER)/($TESTFILE) -kv -x https://FPX1:IP_CLIENT:($PROXY_PORT) --proxy-in -AFirefox -u[SERVER2:user]:[SERVER2:passwd]
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+    edit ($POL_EXP_DEFAULT)
+        set status disable
+end
+dia de reset
+@(error=Backtrace:)
+d de cr r
+d deb cr cl

@@ -1,0 +1,65 @@
+# Verify HTTP/HTTPS Matching the TP polocy (deep inspection and DENY) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+d de cr r
+d de cr cl
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        set status enable
+    next
+    edit ($POL_TP_DEFAULT)
+        set status enable
+end
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+curl http://www.google.com/mail -A'Firefox' -kv --http2
+expect -e "HTTP/.*403"
+@(expect = HTTP/.*[23]\d\d, DEFAULT)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*403)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2
+# when host part is unmatch
+@(error = HTTP/.*403)
+curl http://www.sfu.ca -A'Firefox' -kv -I --http2
+
+#repeat with https
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail -A'Firefox' -kv -I --http1.1
+@(error = HTTP/.*403)
+curl https://www.google.com -A'Firefox' -kvI --http2
+
+@(expect = HTTP/.*403)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+@(expect = HTTP/.*2.*OK)
+curl https://www.sfu.ca -A'Firefox' -kv -IL --http1.1
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        set status disable
+    next
+    edit ($POL_TP_DEFAULT)
+        set status disable
+end

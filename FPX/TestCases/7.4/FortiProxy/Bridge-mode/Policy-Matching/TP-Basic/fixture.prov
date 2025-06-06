@@ -1,0 +1,197 @@
+#FortiProxy transprant policy
+<INIT>
+[LOCAL]
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+#conf fire vip
+#    edit ($VIP_SERVER1)
+#        set extintf ($IF_CLIENT)
+#        set extip SERVER1:VIP_SERVER
+#        set mappedip SERVER1:IP_SERVER
+#    next
+#    edit ($VIP_SERVER2)
+#        set extintf ($IF_CLIENT)
+#        set extip SERVER1:VIP_SERVER
+#        set mappedip SERVER1:IP_SERVER
+#    next
+#end
+conf fire policy
+    purge
+    edit ($POL_ALL_WAD)
+        set srcintf any
+        set dstintf any
+        set srcaddr all
+        set dstaddr *.httpbin.org
+        set service ALL
+        set schedule always
+        set action accept
+        set profile-protocol-options default
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set status disable
+    next
+    edit ($POL_DNS)
+        set srcintf ($IF_CLIENT)
+        set dstintf any
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service DNS
+        set profile-protocol-options test
+    next
+    edit ($POL_TP_MATCH)
+        set srcintf ($IF_CLIENT)
+        set dstintf ($IF_INET)
+        set srcaddr PC1:FQDN
+	#set srcaddr client_firefox mgmt_header_ftnt
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set webproxy-profile "resp_match"
+        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av-profile ($AV_PROF_TEST)
+	set status disable
+    next
+    edit ($POL_TP_MATCH_DENY)
+	set status disable
+        set srcintf ($IF_CLIENT) ($IF_INET)
+        set dstintf "any"
+        set srcaddr "all"
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com www.fishingwithrod.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set action deny
+        set schedule "always"
+        set service "ALL"
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_TP_ISOLATE)
+	set status disable
+        set srcintf ($IF_INET) ($IF_CLIENT)
+        set dstintf "any"
+        set srcaddr "all"
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com www.fishingwithrod.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set action isolate
+        set schedule "always"
+        set service "ALL"
+        set webproxy-profile "resp_isolate"
+	set isolator-server ($ISOLATE_FPX2)
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_TP_FORWARD)
+	set status disable
+        set srcintf ($IF_CLIENT)
+        set dstintf "any"
+        set srcaddr "all"
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com www.fishingwithrod.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set webproxy-profile "resp_forward"
+	set webproxy-forward-server ($fw_fpx2)
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POL_TP_REDIRECT)
+	set status disable
+        set srcintf ($IF_CLIENT)
+        set dstintf "any"
+        set srcaddr "all"
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com www.fishingwithrod.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com www.fishingwithrod.com
+        set action redirect
+        set schedule "always"
+        set service "ALL"
+	set redirect-url https://[SERVER2:FQDN]/[TEST_FILE]
+        set profile-protocol-options "test"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+    edit ($POl_INTER_8080)
+        set srcintf "any"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "intercept_8080"
+        set utm-status enable
+        set webproxy-profile "resp_intercept"
+        set webcache enable
+        set webcache-https enable
+        set profile-protocol-options "inter_8080"
+        set ssl-ssh-profile "deep-inspection-test"
+        set av-profile [AV_PROF_TEST]
+    next
+    edit ($POL_TP_DEFAULT)
+	set status disable
+        set srcintf "any"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "HTTPS"
+        set webproxy-profile "resp_default"
+        set ssl-ssh-profile no-inspection
+    next
+    edit ($TP_POL_TEST)
+	set status disable
+        set srcintf "any"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set webproxy-profile "resp_test"
+        set webcache enable
+        set webcache-https enable
+        set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+        set profile-protocol-options "test"
+        set ssl-ssh-profile "deep-inspection-test"
+        set av-profile [AV_PROF_TEST]
+    next
+#    edit ($TP_POL_DNAT)
+#        set srcintf ($IF_CLIENT)
+#        set dstintf ($IF_INET)
+#        set srcaddr PC1:FQDN
+#        set dstaddr ($VIP_SERVER2) ($VIP_SERVER1)
+#        set action accept
+#        set schedule "always"
+#        set service "ALL"
+#        set webproxy-profile "resp_vip"
+#        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+#        set profile-protocol-options "test"
+#       set ssl-ssh-profile ($SSL_DEEP_TEST)
+#	set status disable
+#    next
+end
+
+SLEEP 15
+[PC1]
+ip address add ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+ip addr
+ip route
+#ifconfig ($IF_CLIENT) add ($IP_CLIENT_SEC) netmask 255.255.255.0
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+
+[PC1]
+ip address del ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+#ifconfig ($IF_CLIENT) del ($IP_CLIENT_SEC) netmask 255.255.255.0

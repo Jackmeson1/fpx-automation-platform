@@ -1,0 +1,18 @@
+#FortiProxy transprant L7 policy - disable fast match
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+config web-proxy global
+    set fast-policy-match disable
+end
+SLEEP 12
+
+<TEARDOWN>
+[FPX1]
+config web-proxy global
+    set fast-policy-match enable
+end

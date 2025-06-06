@@ -1,0 +1,70 @@
+#Verify ftp kernel matches policy with no-nat or nated pool + deny
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status dis
+  next
+  edit ($POL_TP_DENY)
+    set status en
+  next
+  edit ($POL_TP_DEFAULT)
+    set status en
+  next
+end
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+#nat table:
+# server2 ip_mgmt -- bypass nat
+# server2 fqdn -- nat pool 
+# server1 fqdn -- unmatched
+
+[PC1]
+#plain-text bypass nat
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:IP_MGMT
+bye
+
+#plain-text nated pool
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp -d -z nossl SERVER2:FQDN
+bye
+
+#ftps bypass nat
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:IP_MGMT
+bye
+
+#ftps nated pool
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:FQDN
+bye
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status en
+  next
+  edit ($POL_TP_DENY)
+    set status dis
+  next
+  edit ($POL_TP_DEFAULT)
+    set status dis
+  next
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+dia de cr cl

@@ -1,0 +1,57 @@
+# Verify HTTP/HTTPS Matching the TP polocy (deep inspection and accept) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf firewall policy
+    edit ($POL_TP_MATCH)
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP 2
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*200, MATCH)
+curl http://www.google.com/mail -A'Firefox' -kv --http2
+expect -e "HTTP/.*[23]\d\d" -e MATCH -t 3 -fail unmatch -a continue 
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete -A'Firefox' -kv --http2
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.ubc.ca -A'Firefox' -kv -I --http2
+
+#repeat with https
+@(expect = HTTP/.*403)
+curl https://www.google.com/mail -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*[32]\d\d)
+curl https://mail.google.com/mail -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl https://www.google.com -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*200)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf firewall policy
+    edit ($POL_TP_MATCH)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+end

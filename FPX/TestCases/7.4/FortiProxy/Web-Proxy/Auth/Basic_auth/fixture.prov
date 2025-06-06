@@ -1,0 +1,50 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+	set user ($LOCAL_USER_DEFAULT)
+        set group ($grp_abc)
+    next
+    edit ($POL_EXP_DENY)
+	set user ($LOCAL_USER_DEFAULT)
+        set group ($grp_abc)
+    next
+    edit ($POL_EXP_ISOLATE)
+	set user ($LOCAL_USER_DEFAULT)
+        set group ($grp_abc)
+    next
+    edit ($POL_EXP_REDIRECT)
+	set user ($LOCAL_USER_DEFAULT)
+        set group ($grp_abc)
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+	unset user
+        unset group
+    next
+    edit ($POL_EXP_DENY)
+	unset user
+        unset group
+    next
+    edit ($POL_EXP_ISOLATE)
+	unset user
+        unset group
+    next
+    edit ($POL_EXP_REDIRECT)
+	unset user
+        unset group
+    next
+end
+

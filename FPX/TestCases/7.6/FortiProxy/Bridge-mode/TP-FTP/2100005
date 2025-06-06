@@ -1,0 +1,53 @@
+#Verify ftp kernel matches policy with dnat + deny
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status dis
+  next
+  edit ($POL_VIP_DENY)
+    set status en
+  next
+  edit ($POL_TP_DEFAULT)
+    set status en
+  next
+end
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:VIP_SERVER
+bye
+
+@(expect = timed out; error = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:VIP_SERVER
+bye
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status en
+  next
+  edit ($POL_VIP_DENY)
+    set status dis
+  next
+  edit ($POL_TP_DEFAULT)
+    set status dis
+  next
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+dia de cr cl

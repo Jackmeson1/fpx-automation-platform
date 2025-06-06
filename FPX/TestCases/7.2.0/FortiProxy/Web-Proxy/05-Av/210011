@@ -1,0 +1,142 @@
+# Verify av scan in legacy mode with http/https POST/PUT via socks v4/v5 + isolate action
+<INIT>
+LOG_WAITTIME=5
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia te app wad 99
+conf fire pol
+  edit ($DEFAULT_PROXY_ID)
+    set status dis
+  next
+  edit ($POL_EXP_ISOLATE)
+    set status en
+  next
+end
+config antivirus profile
+    edit ($AV_PROF_TEST)
+        set scan-mode legacy
+end
+
+dia sys scanunit debug job
+dia sys scan deb level v
+exec log filter dev 0
+exec log delete-all
+
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($LOG_WAITTIME)
+
+<TEST>
+#http/https GET with socks v4/v5
+
+[PC1]
+@(expect = HTTP/.*403,  EICAR_TEST_FILE)
+curl -T($UPLOAD_EICAR) http://[SERVER1:IP_SERVER]/($UPLOAD_PATH) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = su.*open)
+ENTER
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 2
+@(expect = EICAR_TEST_FILE, SERVER1:IP_SERVER)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction block
+@(expect = countav=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countav=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  EICAR_TEST_FILE)
+curl --data-binary @($UPLOAD_EICAR) https://[SERVER1:IP_SERVER]/($DUMMY) -kv --socks5 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = su.*open)
+ENTER
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 2
+@(expect = EICAR_TEST_FILE, SERVER1:IP_SERVER)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction block
+@(expect = countav=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countav=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  EICAR_TEST_FILE)
+curl --data-binary @($UPLOAD_EICAR) http://[SERVER1:IP_SERVER]/($DUMMY) -kv --socks4 [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = su.*open)
+ENTER
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 2
+@(expect = EICAR_TEST_FILE, SERVER1:IP_SERVER)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction block
+@(expect = countav=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countav=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  EICAR_TEST_FILE)
+curl -T($UPLOAD_EICAR) https://[SERVER1:FQDN]/($UPLOAD_PATH) -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+[FPX1]
+@(expect = su.*open)
+ENTER
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 2
+@(expect = EICAR_TEST_FILE, SERVER1:IP_SERVER)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction block
+@(expect = countav=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countav=1)
+exec log dis
+exec log delete-all
+
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+  edit ($DEFAULT_PROXY_ID)
+    set status en
+  next
+  edit ($POL_EXP_ISOLATE)
+    set status dis
+  next
+end
+
+config antivirus profile
+    edit ($AV_PROF_TEST)
+        unset scan-mode
+end
+
+dia sys scan deb reset
+dia de reset
+@(error=Backtrace)
+d de cr r
+

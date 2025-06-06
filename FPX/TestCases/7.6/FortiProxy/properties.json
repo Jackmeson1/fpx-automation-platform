@@ -1,0 +1,10 @@
+{ "obj_dirs" : [
+	"/Project/fpx_auto/",
+	"/Project/PySystem/"],
+  "tc_base" : "/Project/fpx_auto/trail/",
+  "lab_dir" : "/Project/fpx_auto/environment/",
+  "log_dir" : "",
+  "log_level" : 3
+}
+
+

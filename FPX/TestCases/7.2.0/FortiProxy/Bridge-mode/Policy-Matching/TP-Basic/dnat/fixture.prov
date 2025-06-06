@@ -1,0 +1,92 @@
+#FortiProxy transprant policy with VIP
+<INIT>
+[LOCAL]
+VIP_SERVER1 = vip_server1
+VIP_SERVER2 = vip_server2
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire vip
+    purge
+    edit ($VIP_SERVER1)
+        set extintf ($IF_CLIENT)
+        set extip SERVER1:VIP_SERVER
+        set mappedip SERVER1:IP_SERVER
+    next
+    edit ($VIP_SERVER2)
+        set extintf ($IF_CLIENT)
+        set extip SERVER2:VIP_SERVER
+        set mappedip SERVER2:IP_SERVER
+    next
+end
+conf fire policy
+    edit ($POL_TP_MATCH)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1)
+        set dstaddr ($VIP_SERVER1)
+        set utm-status disable
+        #set webproxy-profile "resp_match"
+        unset webproxy-profile
+        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+        #set av-profile ($AV_PROF_TEST)
+	set status enable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set dstaddr ($VIP_SERVER1)
+    next
+    edit ($POL_TP_ISOLATE)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set dstaddr ($VIP_SERVER1)
+        #set webproxy-profile "resp_isolate"
+        unset webproxy-profile
+    next
+    edit ($POL_TP_REDIRECT)
+        #set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set dstaddr ($VIP_SERVER1)
+    next
+#    edit ($TP_POL_DNAT)
+#        set srcintf ($IF_CLIENT)
+#        set dstintf ($IF_INET)
+#        set srcaddr PC1:FQDN
+#        set dstaddr ($VIP_SERVER2) ($VIP_SERVER1)
+#        set action accept
+#        set schedule "always"
+#        set service "ALL"
+#        set webproxy-profile "resp_vip"
+#        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+#        set profile-protocol-options "test"
+#       set ssl-ssh-profile ($SSL_DEEP_TEST)
+#	set status disable
+#    next
+end
+
+SLEEP 15
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1)
+        set utm-status enable
+        set webproxy-profile "resp_match"
+        set av-profile ($AV_PROF_TEST)
+	set status disable
+    next
+    edit ($POL_TP_MATCH_DENY)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+    next
+    edit ($POL_TP_ISOLATE)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set webproxy-profile "resp_isolate"
+    next
+    edit ($POL_TP_REDIRECT)
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+    next
+end
+
+config fire vip
+    purge
+end
+

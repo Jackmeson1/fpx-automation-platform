@@ -1,0 +1,35 @@
+# Verify FOH proxy – ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+#SLEEP 5
+
+<TEST>
+
+[PC1]
+#match fqdn type address
+@(expect = HTTP/.*200, MATCH)
+curl ftp://SERVER2:FQDN/($FTPFOLDER)/($TESTFILE) -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -u SERVER2:user:SERVER2:passwd
+#match subnet type address
+@(expect = HTTP/.*200, MATCH)
+curl ftp://SERVER1:FQDN/($FTPFOLDER)/($TESTFILE) -kv -x FPX1:IP_CLIENT:($PROXY_PORT) -u SERVER2:user:SERVER2:passwd
+
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

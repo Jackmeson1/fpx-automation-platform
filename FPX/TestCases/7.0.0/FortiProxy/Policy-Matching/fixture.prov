@@ -1,0 +1,550 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+addr_url_list = addr_url_list
+addr_ip_list = addr_ip_list
+
+<SETUP>
+[FPX1]
+config system external-resource
+    purge
+    edit "ext_url_list"
+        set type url
+        set resource http://SERVER2:IP_SERVER/external/ext_url_list
+        set refresh-rate 1
+    next
+    edit "ext_cat_list"
+        set type category
+        set category 192
+        set resource http://SERVER2:IP_SERVER/external/ext_cat_list
+        set refresh-rate 1
+    next
+end
+
+config firewall proxy-address
+    edit "url_files"
+        set host "all"
+        set path "/files"
+    next
+    edit "ua_test"
+        set type src-advanced
+        set host ($SUB_CLIENT)
+        set method get head
+        set ua other
+    next
+    edit "get_only"
+        set type method
+        set host "all"
+        set method get
+    next
+    edit "method_CONNECT"
+        set type method
+        set host "all"
+        set method connect
+    next
+    edit "url_upload"
+        set host "all"
+        set path "/upload"
+    next
+    edit server1_files
+        set host [SERVER1:FQDN]
+        set path "/files"
+    next
+    edit server2_files
+        set host [SERVER2:FQDN]
+        set path "/files"
+    next
+    edit "http_addr_test"
+        set host [SERVER1:FQDN]
+        set path "/upload"
+        set query "ftnt"
+        set post-arg enable
+    next
+    edit "cat_test"
+        set type category
+        set host "all"
+        set category 46
+    next
+    edit "cat_sport"
+        set type category
+        set host "all"
+        set category 46
+    next
+    edit "client_firefox"
+        set type ua
+        set host [PC1:FQDN]
+        set ua firefox
+    next
+    edit "client_mgmt_get"
+        set type method
+        set host [ADDR_CLIENT]
+        set method get
+    next
+    edit "fishing_cat_sport"
+        set type category
+        set host "*.fishingwithrod.com"
+        set category 46
+    next
+    edit "google_cat_search_engine"
+        set type category
+        set host "*.google.com"
+        set category 41
+    next
+    edit "google_cat_mail"
+        set type category
+        set host "*.google.com"
+        set category 23
+    next
+    edit "google_cat_app"
+        set type category
+        set host "*.google.com"
+        set category 84
+    next
+    edit "google_cat_reference"
+        set type category
+        set host "*.google.com"
+        set category 39
+    next
+    edit httpbin_it
+        set type category
+        set host *.httpbin.org
+        set category 52
+    next
+    edit "adv_src_test"
+        set type src-advanced
+        set host ($SUB_CLIENT)
+        set method get head
+        set ua chrome
+        config header-group
+            edit 1
+                set header-name "FTNT"
+                set header "FPX"
+            next
+        end
+    next
+    edit "header_ftnt"
+        set type header
+        set host "all"
+        set header-name "MYHEADER"
+        set header "FTNT"
+    next
+    edit "fishingwithrod_services"
+        set host "www.fishingwithrod.com"
+        set path "/services"
+    next
+    edit "client_header_ftnt"
+        set type header
+        set host ($SUB_CLIENT)
+        set header-name "MYHEADER"
+        set header "FTNT"
+    next
+    edit "mgmt_header_ftnt"
+        set type header
+        set host ($SUB_MGMT)
+        set header-name "MYHEADER"
+        set header "FTNT"
+    next
+    #edit "pc2_mgmt_firefox"
+    #    set type ua
+    #    set host [PC2:IP_MGMT]
+    #    set ua firefox
+    #next
+    edit "mgmt_firefox"
+        set type ua
+        set host [SUB_MGMT]
+        set ua firefox
+    next
+    #external url list -- server1/files/; server2/upload/; www.httpbin.org/status/; www.example.com
+    edit ($addr_url_list)
+        set type url-list
+        set host all
+        set url-list ext_url_list
+    next
+end
+config firewall ssl-ssh-profile
+    edit "deep-test"
+        config https
+            set ports 443
+            set status deep-inspection
+            set unsupported-ssl-version allow
+            set expired-server-cert allow
+            set revoked-server-cert allow
+            set cert-validation-failure allow
+        end
+        config ftps
+            set ports 990
+            set status deep-inspection
+            set expired-server-cert allow
+            set revoked-server-cert allow
+            set cert-validation-failure allow
+        end
+        config imaps
+            set ports 993
+            set status deep-inspection
+            set client-certificate bypass
+            set expired-server-cert allow
+            set revoked-server-cert allow
+            set cert-validation-failure allow
+        end
+        config pop3s
+            set ports 995
+            set status deep-inspection
+            set client-certificate bypass
+            set expired-server-cert allow
+            set revoked-server-cert allow
+            set cert-validation-failure allow
+        end
+        config smtps
+            set ports 465
+            set status deep-inspection
+            set client-certificate bypass
+            set expired-server-cert allow
+            set revoked-server-cert allow
+            set cert-validation-failure allow
+        end
+        config ssh
+            set ports 22
+            set status deep-inspection
+        end
+        config dot
+            set status deep-inspection
+        end
+        config ssl-exempt
+	    purge
+            edit 0
+                set type address
+                set address "*.fishingwithrod.com"
+            next
+            edit 0
+                set fortiguard-category 31
+            next
+            edit 0
+                set fortiguard-category 33
+            next
+            edit 0
+                set fortiguard-category 87
+            next
+            edit 0
+                set fortiguard-category 46
+            next
+        end
+    next
+end
+
+config web-proxy profile
+    edit "resp_test"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_TEST"
+            next
+        end
+    next
+    edit "resp_match"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_MATCHED"
+            next
+        end
+    next
+    edit "resp_forward"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_FORWARD"
+            next
+        end
+    next
+    edit "resp_isolate"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_ISOLATED"
+            next
+        end
+    next
+    edit "resp_default"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_DEFAULT"
+            next
+        end
+    next
+    edit "resp_intercept"
+        set header-via-response add
+        config headers
+            edit 1
+                set name "MY_RESP"
+                set action add-to-response
+                set add-option append
+                set content "POL_INTERCEPT"
+            next
+        end
+    next
+end
+
+config firewall service custom
+    edit "intercept_8080"
+        set category "Web Access"
+        set tcp-portrange 8080
+    next
+end
+
+#[FPX1_GUI]
+#click_menu Policy -t "Policy & Objects"
+#show_column ID
+#click_button "By Sequence"
+## delete_row --col Name DEFAULT_TP_POLICY
+#delete_all_rows
+#
+##click_button "Create New"
+#create_new
+ #   field_input -f Name DEFAULT_TP_POLICY
+ #   field_select Transparent -f Type
+#    field_set any -f "Incoming Interface"
+#    field_append [IF_SERVER] [IF_INET] -f"Outgoing Interface"
+#    field_set all -f Source -s Address
+#    field_dropdown_select always -f Schedule
+#    field_append ALL -f Service
+#    field_set all -f Destination -s Address --cate ADDRESS
+#    radio_choose ACCEPT -f Action
+##validate_not ng-invalid -by "class name"
+#validate_page
+#click_button OK
+#
+#create_new
+#    field_input -f Name DEFAULT_TP_IBP
+#    field_select Transparent -f Type
+#    field_set [IF_CLIENT] -f "Incoming Interface"
+#    field_append [IF_SERVER] [IF_INET] -f"Outgoing Interface"
+ #   field_set all -f Source -s Address
+ #   field_append [LOCAL_GRP_DEFAULT] -f Source -s User -c "USER GROUP"
+ #   field_dropdown_select always -f Schedule
+ #   field_append ALL -f Service
+ #   field_append all -f Destination -s Address --cate ADDRESS
+ #   radio_choose ACCEPT -f Action
+##validate_not ng-invalid -by "class name"
+#validate_page
+#click_button OK
+
+#[FPX1]
+#conf fire policy
+#    purge
+#    edit [POL_TP_MATCH]
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "google_cat_mail" "server1_files" "www.example.com" "url_upload"
+#        set action accept
+#        set schedule "always"
+#        set service "ALL"
+#        set utm-status enable
+#        set webproxy-profile "resp_match"
+#        #set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile [SSL_DEEP_TEST]
+#        set av-profile [AV_PROF_TEST]
+#    next
+#    edit [POL_TP_MATCH_DENY]
+#	set status disable
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "google_cat_mail" "server1_files" "www.example.com" "url_upload"
+#        set action deny
+#        set schedule "always"
+#        set service "ALL"
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile [SSL_DEEP_TEST]
+#    next
+#    edit [POL_TP_MATCH_ISOLATE]
+#	set status disable
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "google_cat_mail" "server1_files" "www.example.com" "url_upload"
+#        set action isolate
+#        set schedule "always"
+#        set service "ALL"
+#	set isolator-server [ISOLATE_FPX2]
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile [SSL_DEEP_TEST]
+#    next
+#    edit [POL_TP_MATCH_REDIRECT]
+#	set status disable
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "google_cat_mail" "server1_files" "www.example.com" "url_upload"
+#        set action redirect
+#        set schedule "always"
+#        set service "ALL"
+#	set redirect-url https://[SERVER2:FQDN]/[TEST_FILE]
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile [SSL_DEEP_TEST]
+#    next
+#    edit [POl_INTER_8080]
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "all"
+#        set action accept
+#        set schedule "always"
+#        set service "intercept_8080"
+#        set utm-status enable
+#        set webproxy-profile "resp_intercept"
+#        set webcache enable
+#        set webcache-https enable
+#        set profile-protocol-options "inter_8080"
+#        set ssl-ssh-profile "deep-inspection-test"
+#        set av-profile [AV_PROF_TEST]
+#    next
+#    edit [POL_TP_DEFAULTL]
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "all"
+#        set action accept
+#        set schedule "always"
+#        set service "HTTP" "HTTPS"
+#        set webproxy-profile "resp_default"
+#        set ssl-ssh-profile no-inspection
+#    next
+#    edit [POL_EXP_MATCH]
+#        set type explicit-web
+#        set dstintf "any"
+#        set srcaddr client_firefox mgmt_header_ftnt
+#        set dstaddr "google_cat_mail" "server1_files" "www.example.com"
+#        set action accept
+#        set schedule "always"
+#        set service "webproxy"
+#        set explicit-web-proxy "web-proxy"
+#        set webproxy-profile "resp_match"
+#        set webproxy-forward-server [fw_fpx2]
+#        set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+#        set ssl-ssh-profile "deep-test"
+#    next
+#    edit [POL_EXP_DEFAULT]
+#        set type explicit-web
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "all"
+#        set action accept
+#        set schedule "always"
+#        set service "webproxy"
+#        set explicit-web-proxy "web-proxy"
+#        set utm-status enable
+#        set webproxy-profile "resp_default"
+#        set log-http-transaction enable
+#        set log-http-transaction all
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile "cert-inspection-test"
+#        set av-profile [AV_PROF_TEST]
+#        set ips-sensor "default"
+#        set ssh-filter-profile "pwd"
+#    next
+#    edit [EXP_POL_TEST]
+#        set type explicit-web
+#        set dstintf any
+#        set srcaddr all
+#        set dstaddr all
+#        set action accept
+#        set schedule always
+#        set service webproxy
+#        set explicit-web-proxy web-proxy
+#        set utm-status enable
+#        set webproxy-profile "resp_test"
+#        set log-http-transaction all
+#        set ssh-policy-redirect enable
+#        set ssl-ssh-profile "deep-test"
+#	set status disable
+#    next
+#    edit [TP_POL_TEST]
+#        set srcintf "any"
+#        set dstintf "any"
+#        set srcaddr "all"
+#        set dstaddr "all"
+#        set action accept
+#        set schedule "always"
+#        set service "ALL"
+#        set utm-status enable
+#        set webproxy-profile "resp_test"
+#        set webcache enable
+#        set webcache-https enable
+#        set groups [LOCAL_GRP_DEFAULT] [LDAP_GRP]
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile "deep-inspection-test"
+#        set av-profile [AV_PROF_TEST]
+#	set status disable
+#    next
+#end
+
+config firewall central-snat-map
+    purge
+    edit 1
+        set srcintf "any"
+        set dstintf [IF_SERVER]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+    edit 2
+        set srcintf any
+        set dstintf [IF_INET]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+    edit 3
+        set srcintf "any"
+        set dstintf [IF_MGMT]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+end
+
+[PC1]
+ip route del [SERVER1:IP_SERVER]
+ip route add [SERVER1:IP_SERVER] via [FPX1:IP_CLIENT] src ($IP_CLIENT)
+ip route del [SERVER2:IP_SERVER]
+ip route add [SERVER2:IP_SERVER] via [FPX1:IP_MGMT]
+
+#[PC2]
+#ip route del [SERVER1:IP_SERVER]
+#ip route add [SERVER1:IP_SERVER] via [FPX1:IP_CLIENT]
+
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+
+conf fire central-snat
+    purge
+end
+
+[PC1]
+ip route del [SERVER1:IP_SERVER]
+ip route del [SERVER2:IP_SERVER]
+
+#[PC2]
+#ip route del [SERVER1:IP_SERVER]

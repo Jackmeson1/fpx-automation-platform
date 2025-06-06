@@ -1,0 +1,95 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (session-auth + deep inspection and accept) with category address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    set groups grp_abc
+end
+
+SLEEP 8
+
+<TEST>
+[PC1]
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*200, MATCH)
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+expect -e "HTTP/.*407"
+curl http://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+expect -e "HTTP/.*[23]\d\d" -e MATCH
+@(expect = HTTP/.*403)
+curl http://www.google.com -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ub:b
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*407)
+curl -X DELETE http://www.httpbin.org/delete -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Uc:c
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2 -Ua:a
+
+#repeat with https
+@(expect = HTTP/.*(3\d\d|OK), MATCH)
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ua:a
+@(expect = HTTP/.*407)
+curl https://www.google.com/mail -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403)
+curl https://www.google.com/maps -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+@(expect = HTTP/.*200, MATCH)
+curl -d'test' https://www.httpbin.org/post -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+#socks
+#Category email, host=google with sub-category by url path
+#@(expect = HTTP/.*200, MATCH)
+curl http://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+expect -e "HTTP/.*407"
+curl http://www.google.com/mail --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+expect -e "HTTP/.*[23]\d\d" -e MATCH
+@(expect = HTTP/.*403)
+curl http://www.google.com --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ub:b
+
+#Category Information, host=*.httpbin.org without sub-category based on url path
+@(expect = HTTP/.*407)
+curl -X DELETE http://www.httpbin.org/delete --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*200, MATCH)
+curl -X DELETE http://www.httpbin.org/delete --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Uc:c
+# when host part is unmatch
+@(expect = HTTP/.*403)
+curl http://www.ubc.ca --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2 -Ua:a
+
+#repeat with https
+@(expect = HTTP/.*(3\d\d|OK), MATCH)
+curl https://www.google.com/mail --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1 -Ua:a
+@(expect = HTTP/.*407)
+curl https://www.google.com/mail --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+@(expect = HTTP/.*403)
+curl https://www.google.com/maps --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+
+@(expect = HTTP/.*200, MATCH)
+curl -d'test' https://www.httpbin.org/post --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2 -Ua:a
+@(expect = HTTP/.*403)
+curl https://www.ubc.ca --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http2
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+  edit ($POL_EXP_MATCH)
+    unset groups
+end
+

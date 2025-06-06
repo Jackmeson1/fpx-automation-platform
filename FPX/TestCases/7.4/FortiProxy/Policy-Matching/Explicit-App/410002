@@ -1,0 +1,63 @@
+# Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with inline-APP
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+	set srcaddr all
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP ($CONFIG_WAIT)
+
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*[23]\d\d, MATCH; error = HTTP/.*4\d\d)
+curl http://drive.google.com -x https://FPX1:IP_CLIENT:($PROXY_PORT) --proxy-in -A'Firefox' -kv --http2
+@(expect = HTTP/.*403)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1 -x FPX1:IP_CLIENT:($PROXY_PORT)
+@(expect = HTTP/.*403)
+curl http://www.example.com -A'Firefox' -kv -I --http1.1 -x https://FPX1:IP_CLIENT:($PROXY_PORT) --proxy-in
+#https
+@(expect = HTTP/.*[23]\d\d; error = HTTP/.*4\d\d, MATCH)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL -x FPX1:IP_CLIENT:($PROXY_PORT)
+@(expect = HTTP/.*403)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2 -x FPX1:IP_CLIENT:($PROXY_PORT)
+
+
+#socks
+[PC1]
+@(expect = HTTP/.*[23]\d\d; error = HTTP/.*4\d\d, MATCH)
+curl https://drive.google.com --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -kv --http2 -L
+@(expect = HTTP/.*403)
+curl http://www.google.com -kv -I --http1.1 --socks5 FPX1:IP_CLIENT:($PROXY_PORT)
+#https
+@(expect = HTTP/.*[23]\d\d; error = HTTP/.*4\d\d, MATCH)
+curl https://drive.google.com --socks5 FPX1:IP_CLIENT:($PROXY_PORT) -kv --http2
+@(expect = HTTP/.*[23]\d\d; error = HTTP/.*4\d\d, MATCH)
+curl https://drive.google.com -kv -IL --socks5 FPX1:IP_CLIENT:($PROXY_PORT)
+@(expect = HTTP/.*403)
+curl -d'test' https://www.httpbin.org/post -kv --http2 -x FPX1:IP_CLIENT:($PROXY_PORT)
+
+
+<TEARDOWN>
+[FPX1]
+conf firewall policy
+    edit ($POL_EXP_MATCH)
+	set srcaddr client_firefox mgmt_header_ftnt
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+d deb cr cl

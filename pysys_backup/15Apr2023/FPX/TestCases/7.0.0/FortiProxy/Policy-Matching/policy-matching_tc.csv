@@ -1,0 +1,61 @@
+Path,QAID,Objective,Release,Priority,Autotest
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL-exempt and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and deny) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL-EXEMPT and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERT inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL EXEMPT and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + cert inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + ssl-exempt and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with dst and source address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL-exempt and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and deny) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL-EXEMPT and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (CERT inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (SSL EXEMPT and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + cert inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (session-auth + ssl-exempt and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/Explicit-L7/non-fastmatch/,,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with dst and source address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (CERTIFICATE inspection and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (SSL-exempt and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and deny) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (CERTIFICATE inspection and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (SSL-EXEMPT and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (CERT inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (SSL EXEMPT and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + cert inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + ssl exempt and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + deep inspection and isolate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + cert inspection and ioslate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + ssl exempt and ioslate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify Matching the TP polocy (deep inspection and accept) with dst/src address on single policy,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fastmatch/,,Verify Matching the mulitple TP polocy with L7 dst/scr addresses (deep inspection and accept),7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (CERTIFICATE inspection and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (SSL-exempt and ACCEPT) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and deny) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (CERTIFICATE inspection and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (SSL-EXEMPT and DENY) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (deep inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (CERT inspection and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (SSL EXEMPT and ISOLATE) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + deep inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + cert inspection and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + ssl exempt and accept) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + deep inspection and isolate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + cert inspection and ioslate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify HTTP/HTTPS Matching the TP polocy (session-auth + ssl exempt and ioslate) with category address,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify Matching the TP polocy (deep inspection and accept) with dst/src address on single policy,7.0.10,Critical,Yes
+/FortiProxy/Policy-Matching/TP-L7/fast-disable/,,Verify Matching the mulitple TP polocy with L7 dst/scr addresses (deep inspection and accept),7.0.10,Critical,Yes

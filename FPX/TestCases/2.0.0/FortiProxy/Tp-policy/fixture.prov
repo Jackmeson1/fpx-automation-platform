@@ -1,0 +1,104 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+TEST_IF = port5
+IP_TEST = 10.10.6.6
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+PROXY_PORT = 8080
+#HTTPS_PROXY_PORT = 8080
+FTP_PROXY_PORT = 2121
+
+<SETUP>
+[FPX1]
+conf fire policy
+    edit [DEFAULT_TP_POID]
+	set srcintf any
+        set dstintf [IF_SERVER] [IF_INET]
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service ALL
+        set utm en
+        set profile-protocol-options [PROF_PROTO_TEST]
+        #set av [AV_PROF_TEST]
+        #set webfilter-profile [WF_PROF_DEFAULT]
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        #set ips [IPS_TEST]
+    next
+    edit [DEFAULT_TP_IBP_ID]
+	set srcintf [IN_CLIENT]
+        set dstintf [IF_SERVER] [IF_INET]
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service ALL
+        set utm en
+        set users [LOCAL_USER_DEFAULT]
+        set group [LOCAL_GRP_DEFAULT]
+        set profile-protocol-options [PROF_PROTO_TEST]
+        #set av [AV_PROF_TEST]
+        #set webfilter-profile [WF_PROF_DEFAULT]
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        #set ips [IPS_TEST]
+    next
+    edit [TP_REDIRECT_ID]
+	set dstintf any
+        set srcaddr all
+        set dstaddr [ADDR_SERVER1]
+        set action redirect
+        set redirect-url https://[SERVER2:IP_SERVER]/files/test]
+        set schedule always
+        set service webproxy
+        set utm en
+        #set av [AV_PROF_TEST]
+        set ssl-ssh-profile [SSL_DEEP_TEST]
+        #set ips [IPS_TEST]
+	next
+    edit [TP_REDIRECT_IBP_ID]
+        set dstintf [IF_SERVER] [IF_INET]
+        set srcaddr all
+        set dstaddr [ADDR_SERVER1]
+        set action redirect
+        set redirect-url http://[SERVER2:IP_SERVER]/files/test
+        set service webproxy
+        set schedule always
+        set utm-status enable
+        set users [LOCAL_USER_DEFAULT]
+        set group [LOCAL_GRP_DEFAULT]
+        set profile-protocol-options [PROF_PROTO_TEST]
+    next
+end
+
+config firewall central-snat-map
+    edit 1
+        set srcintf "any"
+        set dstintf [IF_SERVER]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+    edit 2
+        set srcintf [IF_CLIENT] [IF_MGMT]
+        set dstintf [IF_INET]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+    edit 3
+        set srcintf "any"
+        set dstintf [IF_MGMT]
+        set src-addr "all"
+        set dst-addr "all"
+    next
+end
+
+<TEARDOWN>
+config firewall policy
+	purge
+end
+
+conf fire central-snat
+    purge
+end

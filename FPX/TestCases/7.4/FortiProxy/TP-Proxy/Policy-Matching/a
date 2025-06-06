@@ -1,0 +1,32 @@
+# Verify HTTP/HTTPS walks thru tp-policy without L7 features
+<INIT>
+
+<TCID>
+0000000 
+
+<SETUP>
+[FPX1]
+dia de app scanunit -1
+dia de en
+d de cr r
+d de cr cl
+SLEEP 5
+
+<TEST>
+#http/https GET
+[PC1]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl [SERVER1:IP_SERVER]/[EICAR_FILE] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+@(expect = HTTP/.*403,  it is infected with the virus, quarantined as: \[disabled\], name:\s*$)
+curl https://[SERVER1:IP_SERVER]/[EICAR_FILE] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT]
+
+[FPX1]
+@(error = job.*open)
+ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r

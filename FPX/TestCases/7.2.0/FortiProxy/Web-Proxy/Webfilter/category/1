@@ -1,0 +1,143 @@
+# Verify cate filter (block) via socks accept policy + deep scan
+<INIT>
+LOG_WAITTIME=5
+
+<TCID>
+
+<SETUP>
+[FPX1]
+# Shopping - block   amazon.com -> subcate
+# Travel - block
+# Search engine - monitor   google.com -> subcate
+# IT - monitor
+# News - Authenticate       bbc.com -> subcate
+# Business - Authenticate
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set webfilter ($WF_PROF_CATE)
+    next
+end
+
+exec log filter dev 0
+exec log delete-all
+
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+<TEST>
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.amazon.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = denied cate, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field hostname www.amazon.com
+exec log filter field utmaction block
+@(expect = countweb=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = denied cate, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field hostname www.google.com
+exec log filter field utmaction block
+@(expect = countweb=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.bbc.com/travel -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+exec log delete-all
+
+#https
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.amazon.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = denied cate, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field utmaction block
+@(expect = countweb=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = denied cate, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field hostname www.google.com
+exec log filter field utmaction block
+@(expect = countweb=1)
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.bbc.com/travel -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+exec log delete-all
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set webfilter ($WF_PROF_TEST)
+    next
+end

@@ -1,0 +1,168 @@
+#FortiProxy transprant policy
+<INIT>
+[LOCAL]
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+WP_CLIENT = wp_client
+PROXY_CLIENT_PORT = 8888
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+#conf fire vip
+#    edit ($VIP_SERVER1)
+#        set extintf ($IF_CLIENT)
+#        set extip SERVER1:VIP_SERVER
+#        set mappedip SERVER1:IP_SERVER
+#    next
+#    edit ($VIP_SERVER2)
+#        set extintf ($IF_CLIENT)
+#        set extip SERVER1:VIP_SERVER
+#        set mappedip SERVER1:IP_SERVER
+#    next
+#end
+config web-proxy explicit-proxy
+    edit "web-proxy"
+        set status enable
+        set interface "any"
+        set ftp-over-http enable
+	# bug-927635
+        #set socks enable
+        set socks disable
+        set http-incoming-port 8080
+    next
+    edit ($WP_CLIENT)
+        set status enable
+        set interface "any"
+        set ftp-over-http enable
+        set socks enable
+        set http-incoming-port 8888
+    next
+end
+
+conf fire policy
+    purge
+    edit ($POL_MISMATCH)
+        set type explicit-web
+        set dstintf any
+        set srcaddr ($UNMATCH_FQDN)
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        set profile-protocol-options test
+        set ssl-ssh-profile no-inspection
+        set status disable
+    next
+    edit ($POL_EXP_MATCH)
+        set type explicit-web
+        set dstintf any
+        set srcaddr PC1:FQDN
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set action accept
+        set schedule always
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        set profile-protocol-options test
+        set utm-status enable
+        set webproxy-profile "resp_match"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av-profile ($AV_PROF_TEST)
+	set status enable
+    next
+    edit ($POL_EXP_DENY)
+        set type explicit-web
+        set dstintf any
+        set srcaddr PC1:FQDN
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set action deny
+        set schedule always
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        set profile-protocol-options test
+        #set webproxy-profile "resp_deny"
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+	set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set type explicit-web
+        set dstintf any
+        set srcaddr PC1:FQDN
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set action isolate
+        set schedule always
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        set profile-protocol-options test
+        set utm-status enable
+        set webproxy-profile "resp_isolate"
+	set isolator-server ($ISOLATE_FPX2)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set av-profile ($AV_PROF_TEST)
+	set status disable
+    next
+ #   edit ($POL_TP_FORWARD)
+#	set status disable
+#        set srcintf ($IF_CLIENT)
+#        set dstintf "any"
+#        set srcaddr "all"
+#        #set dstaddr google_cat_mail server1_files server2_files www.example.com httpbin_it
+#        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+#        set action accept
+#        set schedule "always"
+#        set service "ALL"
+#        set webproxy-profile "resp_forward"
+#	set webproxy-forward-server ($fw_fpx2)
+#        set profile-protocol-options "test"
+#        set ssl-ssh-profile ($SSL_DEEP_TEST)
+#    next
+    edit ($POL_EXP_REDIRECT)
+        set type explicit-web
+        set dstintf any
+        set srcaddr PC1:FQDN
+        #set dstaddr google_cat_mail server1_files server2_files www.example.com httpbin_it
+        set dstaddr SERVER2:FQDN ($ADDR_SERVER1) www.example.com
+        set action redirect
+        set schedule always
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        #set profile-protocol-options test
+	set redirect-url https://[SERVER2:FQDN]/[TEST_FILE]
+        #set ssl-ssh-profile ($SSL_DEEP_TEST)
+	set status disable
+    next
+    edit ($POL_EXP_DEFAULT)
+        set type explicit-web
+        set dstintf any
+        set srcaddr all
+        set dstaddr all
+        set action accept
+        set schedule always
+        set service webproxy
+        set webproxy-profile resp_default
+        set service webproxy
+        set explicit-web-proxy web-proxy
+        set profile-protocol-options test
+        set ssl-ssh-profile no-inspection
+        set status disable
+    next
+end
+
+SLEEP 20 
+[PC1]
+#ip address add ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+#ip addr
+#ip route
+#ifconfig ($IF_CLIENT) add ($IP_CLIENT_SEC) netmask 255.255.255.0
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end
+
+[PC1]
+ip address del ($IP_CLIENT_SEC)/($PREFIX) dev ($IF_CLIENT)
+#ifconfig ($IF_CLIENT) del ($IP_CLIENT_SEC) netmask 255.255.255.0

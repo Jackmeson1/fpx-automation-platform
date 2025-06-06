@@ -1,0 +1,61 @@
+# Verify http/https GET compressed oversize file is passthru by scanunitd for legacy mode and logged
+<INIT>
+<TCID>
+
+<SETUP>
+[FPX1]
+@(warning = Backtrace:)
+dia de cr read
+dia de cr cl
+exec log filter cat 2
+exec log delete-all
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode legacy
+end
+config firewall profile-protocol-options
+    edit [PROF_PROTO_TEST]
+        conf http
+            set oversize-limit [ZIP_PASS_SIZE]
+        end
+end
+SLEEP 3
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*2\d\d)
+curl http://[SERVER1:IP_SERVER]/[EICAR_PDF_20M_ZIP] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] -odump
+
+[FPX1]
+SLEEP 4
+@(expect = uncompressed size limit, passthrough)
+exec log display
+
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*2\d\d)
+curl http://[SERVER1:IP_SERVER]/[EICAR_PDF_20M_ZIP] -kv -x[FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] -odump
+
+[FPX1]
+SLEEP 4
+@(expect = uncompressed size limit, passthrough)
+exec log display
+exec log delete-all
+
+<TEARDOWN>
+[FPX1]
+conf antivirus profile
+  edit [AV_PROF_TEST]
+    set scan-mode default
+end
+config firewall profile-protocol-options
+    edit [PROF_PROTO_TEST]
+        conf http
+            unset oversize-limit
+        end
+end
+@(error = Backtrace:)
+dia de cr read
+
+dia de reset

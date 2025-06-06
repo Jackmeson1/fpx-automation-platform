@@ -1,0 +1,91 @@
+#Verify ftp kernel matches policy with dnat + accept
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace:)
+d de cr r
+d de cr cl
+
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status disable
+  next
+  edit ($POL_VIP_MATCH)
+    set status enable
+  next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+#nat table:
+# server2 fqdn -- bypass nat
+# server2 inet ip -- nat pool 
+# server1 fqdn -- unmatched
+
+#nat
+[PC1]
+#unmatched fqdn(server1)
+@(expect = timed out; error = 230; user = SERVER1:user; password = SERVER1:passwd)
+ftp -d -z nossl SERVER1:VIP_SERVER
+bye
+@(error = 230; user = SERVER1:user; password = SERVER1:passwd)
+ftp -d SERVER1:VIP_SERVER
+bye
+
+#plain-text with vip
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d -z nossl SERVER2:VIP_SERVER
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+@(expect = 226)
+get eicar.com
+pass
+@(expect = 226)
+get eicar.com
+@(expect = 200)
+ascii
+@(expect = 226)
+get eicar.com
+bye
+
+#ftps vip
+@(expect = 230; user = SERVER2:user; password = SERVER2:passwd)
+ftp-ssl -d SERVER2:VIP_SERVER
+@(expect = 250) 
+cd ftpfolder
+@(expect = 200)
+bin
+@(expect = 226)
+get eicar.com
+pass
+@(expect = 226)
+get eicar.com
+@(expect = 200)
+ascii
+@(expect = 226)
+get eicar.com
+bye
+
+
+<TEARDOWN>
+[FPX1]
+conf fire pol
+  edit ($POL_TP_MATCH)
+    set status enable
+  next
+  edit ($POL_VIP_MATCH)
+    set status disable
+  next
+end
+
+dia de reset
+@(error=Backtrace:)
+d de cr r
+dia de cr cl

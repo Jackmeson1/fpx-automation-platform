@@ -1,0 +1,111 @@
+# Verify url filter via socks accept policy auth + cert inspect
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status enable
+end
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+        set group ($grp_abc)
+    next
+end
+
+
+exec log filter dev 0
+exec log delete-all
+
+#dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*403,  URL.*block)
+curl http://[SERVER1:FQDN]/($URLFILTER_PATH_BLOCK)/($TESTFILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = URL.*Block, SERVER1:IP_SERVER)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction block
+@(expect = countweb, transip=($IP_SERVER))
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://[SERVER1:FQDN]/($URLFILTER_PATH_MONITOR)/($TESTFILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = URL.*allow, SERVER1:IP_SERVER, passthrough)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction allow
+@(expect = countweb, transip=($IP_SERVER))
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://[SERVER1:FQDN]/($URLFILTER_PATH_EXEMPT)/($TESTFILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ub:b
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = URL.*exempt, SERVER1:IP_SERVER, passthrough)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field dstip SERVER1:IP_SERVER
+exec log filter field utmaction allow
+@(expect = countweb, transip=($IP_SERVER))
+exec log dis
+exec log filter field subtype http-transaction
+@(expect = countweb=1)
+exec log dis
+exec log delete-all
+
+#https
+[PC1]
+@(expect = HTTP/.*200)
+curl https://[SERVER1:FQDN]/($URLFILTER_PATH_BLOCK)/($TESTFILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] http2 -Ua:a
+
+@(expect = HTTP/.*200)
+curl --data-bin "test_data" https://[SERVER1:FQDN]/($URLFILTER_PATH_BLOCK)/($TESTFILE) -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] http2 -Ub:b
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status disable
+end
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        unset group
+    next
+end

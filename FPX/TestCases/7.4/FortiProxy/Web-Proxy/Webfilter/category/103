@@ -1,0 +1,168 @@
+# Verify cate filter (block) via socks isolate policy + deep scan
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+# Shopping - block   amazon.com -> subcate
+# Travel - block
+# Search engine - monitor   google.com -> subcate
+# IT - monitor
+# News - Authenticate       bbc.com -> subcate
+# Business - Authenticate
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+    next
+end
+
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+#dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+
+SLEEP ($LOG_WAITTIME)
+
+<TEST>
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.amazon.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect  = 1 log, ftgd_blk, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field clientip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field clientip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl http://www.bbc.com/travel -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+#https
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.amazon.com -kv --socks4a [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field clientip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403, Category, Blocked)
+curl https://www.bbc.com/travel -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status disable
+    next
+end

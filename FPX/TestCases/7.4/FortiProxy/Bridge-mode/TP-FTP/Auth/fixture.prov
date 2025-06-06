@@ -1,0 +1,60 @@
+#FortiProxy TP-FTP policy
+<INIT>
+[LOCAL]
+
+[GLOBAL]
+
+<SETUP>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+	set groups ($grp_abc)
+    next
+    edit ($POL_TP_DENY)
+	set groups ($grp_abc)
+    next
+    edit ($POL_TP_FORWARD)
+	set groups ($grp_abc)
+    next
+    edit ($POL_TP_REDIRECT)
+	set groups ($grp_abc)
+    next
+    edit ($POL_VIP_MATCH)
+	set groups ($grp_abc)
+    next
+    edit ($POL_VIP_DENY)
+	set groups ($grp_abc)
+    next
+    edit ($POL_VIP_FORWARD)
+	set groups ($grp_abc)
+    next
+end
+
+SLEEP ($CONFIG_WAIT)
+
+
+<TEARDOWN>
+[FPX1]
+conf fire policy
+    edit ($POL_TP_MATCH)
+	unset groups
+    next
+    edit ($POL_TP_DENY)
+	unset groups
+    next
+    edit ($POL_TP_FORWARD)
+	unset groups
+    next
+    edit ($POL_TP_REDIRECT)
+	unset groups
+    next
+    edit ($POL_VIP_MATCH)
+	unset groups
+    next
+    edit ($POL_VIP_DENY)
+	unset groups
+    next
+    edit ($POL_VIP_FORWARD)
+	unset groups
+    next
+end

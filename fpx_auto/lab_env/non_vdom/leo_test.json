@@ -1,0 +1,13 @@
+{ "obj_dirs" : [
+	"/Project/fpx_auto/",
+	"/Project/PySystem/"],
+  "tc_base" : "/Project/FPX/TestCases/7.0.0",
+  "lab_dir" : "/Project/fpx_auto/lab_env",
+  "log_dir": "logs",
+  "fixture_fname": "test.prov",
+  "fixture_fallback": false,
+  "Xauthority": "/root/.Xauthority",
+  "Webdriver_dir": "/opt/Webdriver/bin"
+}
+
+

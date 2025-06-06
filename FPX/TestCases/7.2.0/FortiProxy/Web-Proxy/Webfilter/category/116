@@ -1,0 +1,175 @@
+# Verify category filter via socks isolate policy auth + cert inspect
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+# Shopping - block   amazon.com -> subcate
+# Travel - block
+# Search engine - monitor   google.com -> subcate
+# IT - monitor
+# News - Authenticate       bbc.com -> subcate
+# Business - Authenticate
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status enable
+end
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+        set group ($grp_abc)
+    next
+end
+
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+#dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($LOG_WAITTIME)
+
+<TEST>
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked; error = FPX2:hostname)
+curl http://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked; error = FPX2:hostname)
+curl http://www.amazon.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked; error = FPX2:hostname)
+curl http://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked; error = FPX2:hostname)
+curl http://www.bbc.com/travel -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+#https
+#Block action:  no-subcate fqdn (Travel); fqdn with subcate (amazon.com); match sub-cate url (www.google.com/shopping)
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked)
+#@(expect = Can't complete SOCKS; error = HTTP.*[23])
+curl https://www.expedia.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http2 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log delete-all
+
+[PC1]
+@(expect = HTTP/.*403,  Category, Blocked)
+#@(expect = Can't complete SOCKS; error = HTTP.*[23])
+curl https://www.amazon.com -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ub:b
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = 1 log, ftgd_blk, amazon)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction block
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.amazon.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+[PC1]
+#only rate fqdn, result to be monitor
+@(expect = HTTP/.*[23]\d\d)
+curl https://www.google.com/shopping -kv --socks5-h [FPX1:IP_CLIENT]:[FPX1:PROXY_PORT] --http1.1 -Ua:a
+[FPX1]
+SLEEP ($LOG_WAITTIME)
+exec log filter cat 3
+@(expect = URL.*allow, google)
+exec log dis
+exec log filter cat 0
+exec log filter field subtype forward
+exec log filter field srcip PC1:IP_CLIENT
+exec log filter field utmaction allow
+@(expect = countweb)
+exec log dis
+exec log filter field subtype http-transaction
+exec log filter field hostname www.google.com
+@(expect = countweb)
+exec log dis
+exec log filter reset
+exec log filter dev 0
+exec log delete-all
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Backtrace:)
+d de cr r
+
+conf fire policy
+    edit ($DEFAULT_PROXY_ID)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        unset group
+        set status disable
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+    next
+end
+conf auth rule
+    edit ($AUTH_RULE_SOCKS)
+        set status disable
+end

@@ -1,0 +1,19 @@
+#FortiProxy transprant policy initial provision
+<INIT>
+[LOCAL]
+DEFAULT_PROXY_COMMENT = DEFAULT_PROXY
+
+[GLOBAL]
+PROXY_PORT = 8080
+#HTTPS_PROXY_PORT = 8080
+FTP_PROXY_PORT = 2121
+
+<SETUP>
+[FPX1]
+
+
+<TEARDOWN>
+[FPX1]
+config firewall policy
+	purge
+end

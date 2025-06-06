@@ -1,0 +1,56 @@
+# Verify HTTP/HTTPS Matching the TP polocy (deep inspection and deny) with inline-APP
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status disable
+    next
+    edit ($POL_TP_DENY)
+        set status enable
+    next
+    edit ($POL_TP_DEFAULT)
+        set status enable
+    next
+end
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+SLEEP ($CONFIG_WAIT)
+
+<TEST>
+[PC1]
+#matches inline-APP in policy
+@(expect = HTTP/.*403)
+curl http://drive.google.com -A'Firefox' -kv --http2 -I
+@(expect = HTTP/.*[23]\d\d, DEFAULT)
+curl http://www.google.com -A'Firefox' -kv -I --http1.1
+
+
+#https
+@(expect = HTTP/.*403; error = HTTP/.*[23]\d\d)
+curl https://drive.google.com -A'Firefox' -kv --http2 -IL
+@(expect = HTTP/.*[23]\d\d)
+curl -d'test' https://www.httpbin.org/post -A'Firefox' -kv --http2
+
+<TEARDOWN>
+[FPX1]
+config fire pol
+    edit ($POL_TP_MATCH)
+        set status enable
+    next
+    edit ($POL_TP_DENY)
+        set status disable
+    next
+    edit ($POL_TP_DEFAULT)
+        set status disable
+    next
+end
+dia de reset
+@(error=Backtrace:)
+d de cr r
+

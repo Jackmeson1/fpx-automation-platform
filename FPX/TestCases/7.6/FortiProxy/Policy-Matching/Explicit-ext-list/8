@@ -1,0 +1,97 @@
+# Verify Matching explicit polocy (cert inspection and isolate) with external url list address
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Backtrace)
+d de cr r
+d de cr cl
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status disable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set status enable
+        set ssl-ssh-profile ($SSL_CERT_TEST)
+end
+SLEEP 8
+
+<TEST>
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/status/299 -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+[FPX2]
+dia wad deb en cat sess
+d de en
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN/files/testfile -d"test" -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+#match host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[PC1]
+@(expect = HTTP/.*403; error = ISOLATE)
+curl https://SERVER1:FQDN -x FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+#socks
+[PC1]
+@(expect = HTTP/.*200, ISOLATE, FPX2:hostname)
+curl http://SERVER1:FQDN/files/testfile --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+@(expect = HTTP/.*403; error = ISOLATE)
+curl http://SERVER1:FQDN --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+
+@(expect = HTTP/.*299, ISOLATE, FPX2:hostname)
+curl -X DELETE http://www.httpbin.org/status/299 --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+
+#repeat with https
+[FPX2]
+dia wad deb en cat sess
+d de en
+[PC1]
+@(expect = rejected; error = ISOLATE)
+curl https://SERVER1:FQDN/files/testfile -d"test" --socks4a FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv --http2
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+#match host part, connect fw-server and deep scan, but fail to match url-path (924644)
+[PC1]
+@(expect = Can't complete; error = ISOLATE)
+curl https://SERVER1:FQDN --socks5-h FPX1:IP_CLIENT:($PROXY_PORT) -A'Firefox' -kv -I --http1.1
+[FPX2]
+@(error = SERVER1:FQDN)
+ENTER
+
+<TEARDOWN>
+[FPX2]
+dia de reset
+
+[FPX1]
+dia de reset
+@(error=Backtrace)
+d de cr r
+
+config fire pol
+    edit ($POL_EXP_MATCH)
+        set status enable
+    next
+    edit ($POL_EXP_ISOLATE)
+        set ssl-ssh-profile ($SSL_DEEP_TEST)
+        set status disable
+end
+

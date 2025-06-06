@@ -1,0 +1,47 @@
+# Verify GET/POST/PUT Matching the TP-polocy subnet address + single interface + bypass NAT - ACCEPT
+<INIT>
+
+<TCID>
+
+<SETUP>
+[FPX1]
+dia de en
+@(error=Traceback:)
+d de cr r
+d de cr cl
+#SLEEP 5
+
+<TEST>
+#http GET/POST match server1 path /files
+[PC1]
+@(expect = HTTP/.*200, MATCH)
+curl http://SERVER1:FQDN/($TEST_FILE) -kv --http1.1
+#expect -e "HTTP/.*200" -e MATCH -t 3 -fail unmatch -a next 
+@(expect = HTTP/.*200, MATCH)
+curl SERVER1:FQDN/($TEST_FILE) -kv --http2
+@(expect = HTTP/.*200, MATCH)
+curl SERVER1:IP_SERVER/($TEST_FILE) -kv -d'test data'
+@(expect = HTTP/.*20\d, MATCH)
+curl SERVER1:IP_SERVER/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv --http1.1
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv --http2
+@(expect = HTTP/.*200, MATCH)
+curl https://SERVER1:FQDN/($TEST_FILE) -kv -d'test data'
+@(expect = HTTP/.*20\d, MATCH)
+curl SERVER1:FQDN/($UPLOAD_PATH) -kv -T($UPLOAD_PDF)
+
+
+[FPX1]
+#@(error = job.*open)
+#ENTER
+
+
+<TEARDOWN>
+[FPX1]
+dia de reset
+@(error=Traceback:)
+d de cr r
+
