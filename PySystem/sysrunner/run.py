@@ -29,6 +29,38 @@ from executor.sysrunner import SysTestRunner
 from config.environment import ENV
 
 
+def setup_report_dir(log_base: str, http_base_dir: str, http_base_path: str, log_dir: str) -> str:
+    """Prepare report directory and return the report URL."""
+    http_base_path = helpers.format_path(http_base_path)
+    report_url = 'http://{}{}/logs/current/scenario.html'.format(ENV.CTRL_PC.ip, http_base_path)
+    http_dir = http_base_dir + http_base_path
+    link_name = http_dir + '/logs'
+    use_local_path = False
+    try:
+        if not os.path.exists(http_dir):
+            os.makedirs(http_dir)
+        if not os.access(http_dir, os.W_OK):
+            raise PermissionError('Directory not writable')
+        if os.path.exists(link_name):
+            os.unlink(link_name)
+        os.symlink(log_base, link_name, True)
+    except PermissionError as e:
+        pysys_logger.warning('Cannot access %s: %s. Falling back to project logs directory.', http_dir, e)
+        use_local_path = True
+    except OSError as e:
+        pysys_logger.warning('Failed to create symlink %s -> %s: %s', link_name, log_base, e)
+        use_local_path = True
+
+    local_report_path = log_dir + '/scenario.html'
+    if use_local_path:
+        report_url = 'file://' + local_report_path
+        print('Report URL: {}'.format(report_url))
+        print('Please open {} manually.'.format(local_report_path))
+    else:
+        print('Report URL: {}'.format(report_url))
+    return report_url
+
+
 def main():
     parser = argparse.ArgumentParser(description='CLI runner for PySystem')
     parser.add_argument('-t', '--tc_base', help='specify TC root dir')
@@ -109,16 +141,7 @@ def main():
     #     http_base_path = '/pysystem'
     http_base_dir = conf.get('http_dir') or '/var/www/html'
     http_base_path = args.html_path or conf.get('http_base_path') or '/pysystem'
-    # report_url = 'http://localhost{}/logs/current/scenario.html'.format(http_base_path)
-    http_base_path = helpers.format_path(http_base_path)
-    report_url = 'http://{}{}/logs/current/scenario.html'.format(ENV.CTRL_PC.ip, http_base_path)
-    http_dir = http_base_dir + http_base_path
-    if not os.path.exists(http_dir):
-        os.mkdir(http_dir)
-    link_name = http_dir + '/logs'
-    if os.path.exists(link_name):
-        os.unlink(link_name)
-    os.symlink(log_base, link_name, True)
+    report_url = setup_report_dir(log_base, http_base_dir, http_base_path, log_dir)
 
     '''#################################'''
     ''' GUI webdriver environment config'''
