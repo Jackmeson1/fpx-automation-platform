@@ -22,7 +22,9 @@ from SystemObject.sys_obj import SysObj
 from typing import List
 
 from SystemTestCase.SysTestCase import SysTcFail
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 
 class GuiType:
@@ -518,7 +520,7 @@ class GuiNode(CliNode):
         elif self.conn_type == GuiType.HTTPS:
             url = 'https://' + url
         else:  # unsupported protocols
-            pysys_logger.error('unsupported protocol {} for url: {}'.format(self.conn_type, url))
+            logger.error('unsupported protocol {} for url: {}'.format(self.conn_type, url))
             raise ConnectionError('unsupported protocol {} for url: {}'.format(self.conn_type, url))
         self.get(url)
 

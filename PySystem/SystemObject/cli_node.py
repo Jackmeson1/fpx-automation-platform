@@ -10,7 +10,9 @@ from SystemObject.sys_obj import SysObj
 from pexpect import spawn
 from pexpect import TIMEOUT
 from pexpect import EOF
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConnType:
@@ -155,14 +157,14 @@ class CliNode(spawn, SysObj):
             return True
         except TIMEOUT:
             # terminate when hang, to allow next command to be sent properly
-            # pysys_logger.error('Unexpected timeout when CLI waiting for prompt', exc_info=True)
+            # logger.error('Unexpected timeout when CLI waiting for prompt', exc_info=True)
             self.sendcontrol('c')
             self.prompt(refresh_result=False)
             return False
         except EOF:
             # self.sendcontrol('c')
             # self.prompt(refresh_result=False)
-            pysys_logger.warning('Unexpected CLI exit when waiting for prompt', exc_info=True)
+            logger.warning('Unexpected CLI exit when waiting for prompt', exc_info=True)
             self.proc_err('Unexpected CLI exit when waiting for prompt', TcFailAction.STOP)
         # else:
             # self.output += str(self.before + self.after, 'utf-8')
@@ -181,7 +183,7 @@ class CliNode(spawn, SysObj):
             else:
                 raise Exception('Connection types other than SSH or Telnet are yet to support')
         except Exception as e:
-            pysys_logger.error('login failed on {}: {}'.format(self.ip, e), exc_info=True)
+            logger.error('login failed on {}: {}'.format(self.ip, e), exc_info=True)
             self.logged_in = False
             raise SysTcFail(str(e), action=TcFailAction.NEXT)
 
@@ -354,7 +356,7 @@ class CliNode(spawn, SysObj):
         elif level == 'DEBUG':
             head_info = '<DEBUG>:'
         else:
-            pysys_logger.error('LOG TYPE "{}" is not supported'.format(level))
+            logger.error('LOG TYPE "{}" is not supported'.format(level))
         self.logfile.write(bytes('\n' + head_info + ' --- {}\n'.format(msg), 'utf-8'))
         self.logfile.flush()
 
@@ -679,7 +681,7 @@ class LinuxCli(WorkStationCli):
         self.linux_type = linux_type
 
     def su(self):
-        pysys_logger.error('su function is implemented in sub class of LinuxCli based on the OS type')
+        logger.error('su function is implemented in sub class of LinuxCli based on the OS type')
         exit(-1)
 
     def _init_tc_func(self):

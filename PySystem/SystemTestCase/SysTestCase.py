@@ -3,7 +3,9 @@ import unittest
 from SystemTestCase import sys_suite
 from SystemTestCase.tc_mapping import TcFuncMapping
 from executor.sysrunner import TestStatus, SysTestResult
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 import os
 import keyboard
@@ -89,8 +91,14 @@ class SysTestCase(unittest.TestCase, TcFuncMapping):
             result.shouldStop = self.shouldStop
         self.status = result.tc_status
         # self.shouldStop = result.shouldStop
+        self.pass_count = len(result.successes)
+        self.warning_count = len(result.warnings)
+        self.fail_count = len(result.failures) + len(result.errors)
+        self.error_stack = ''
         for err in result.errors:
-            pysys_logger.error(err)
+            stack = err[1] if isinstance(err, tuple) else str(err)
+            logger.error(stack)
+            self.error_stack += stack.splitlines()[-1] + '\n'
         if self.testsuite and any([tcid not in self.testsuite.failed_tcid_list for tcid in self.tcid_list]):
             self.testsuite.update_status(self.tcid_list, self.status)
         return result

@@ -1,7 +1,7 @@
 from unittest import TestResult
 from src.ftnt_lundary_tc import DemoTc
 import unittest
-from monitor import pysys_log
+from monitor import init_logger
 from HtmlTestRunner import HTMLTestRunner
 import time
 
@@ -40,7 +40,7 @@ class SysTestSuite(unittest.TestSuite):
                 self._tests.pop(index)
 
 def main():
-    pysys_log.init_logger()
+    init_logger()
     tc1 = DemoTc('test_exec_tc', {'tc_name': 'TC1'})
     tc2 = DemoTc('test_exec_tc', {'tc_name': 'TC2'})
     print('---------- Run TCs -------------')

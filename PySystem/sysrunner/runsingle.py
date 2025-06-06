@@ -13,7 +13,7 @@ from SystemTestCase.SysTestCase import TestCaseInfo
 from SystemTestCase.script_testcase import ScriptTC
 from SystemTestCase.sys_suite import SysTestSuite
 from config import properties
-from monitor import pysys_log
+from monitor import init_logger
 import json
 
 sys.path.append(properties.tc_base_dir)
@@ -66,9 +66,8 @@ def main():
         with open(conf_file, 'r') as f:
             conf_data.update(json.load(f))
 
-    logger = pysys_log.init_logger(conf_data.get('log_file'),
-                                   conf_data.get('log_level'),
-                                   conf_data.get('console_level'))
+    logger = init_logger(conf_data.get('log_file'),
+                         conf_data.get('log_level'))
 
     #logger.info('argv is set as : {}'.format(sys.argv[-1]))
     tc_full_path = tc_base + '/' + args.tc_file

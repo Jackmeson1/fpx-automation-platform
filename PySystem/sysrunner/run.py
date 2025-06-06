@@ -17,14 +17,14 @@ import pandas
 from pandas.core.frame import DataFrame
 
 from sysinit import pysys_root
-from monitor import pysys_log
+from monitor import init_logger, get_logger
 # runner_dir = os.path.dirname(os.path.abspath(__file__))
 # pysys_root = os.path.abspath(runner_dir + '/..')
 # sys.path.append(pysys_root)
 from SystemTestCase.sys_suite import SysTestSuite, CsvFields
 from SystemTestCase import helpers
 from SystemTestCase.SysTestCase import TcFailAction
-from monitor.pysys_log import pysys_logger
+logger = get_logger(__name__)
 from executor.sysrunner import SysTestRunner
 from config.environment import ENV
 
@@ -45,10 +45,10 @@ def setup_report_dir(log_base: str, http_base_dir: str, http_base_path: str, log
             os.unlink(link_name)
         os.symlink(log_base, link_name, True)
     except PermissionError as e:
-        pysys_logger.warning('Cannot access %s: %s. Falling back to project logs directory.', http_dir, e)
+        logger.warning('Cannot access %s: %s. Falling back to project logs directory.', http_dir, e)
         use_local_path = True
     except OSError as e:
-        pysys_logger.warning('Failed to create symlink %s -> %s: %s', link_name, log_base, e)
+        logger.warning('Failed to create symlink %s -> %s: %s', link_name, log_base, e)
         use_local_path = True
 
     local_report_path = log_dir + '/scenario.html'
@@ -115,7 +115,7 @@ def main():
                 conf.update(json.load(f))
         else:
             err_msg = 'The given config file {} doesn\'t exist'.format(conf_file)
-            pysys_logger.error(err_msg)
+            logger.error(err_msg)
             raise FileExistsError('err_msg')
 
     # parse base directory of test cases
@@ -123,7 +123,7 @@ def main():
         if os.path.isdir(args.tc_base):
             tc_base = args.tc_base
         else:
-            pysys_logger.error('Test Base dir "{}" doesn\'t exist'.format(args.tc_base))
+            logger.error('Test Base dir "{}" doesn\'t exist'.format(args.tc_base))
             exit(-1)
     else:
         tc_base = conf.get('tc_base') or curr_path

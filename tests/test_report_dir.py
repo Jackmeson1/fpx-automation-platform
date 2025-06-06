@@ -8,9 +8,14 @@ sys.path.insert(0, os.path.join(ROOT, 'PySystem'))
 
 # Provide dummy modules required by run.py
 sys.modules['sysinit'] = types.SimpleNamespace(pysys_root='.')
-pysys_logger = types.SimpleNamespace(warning=lambda *a, **k: None)
-sys.modules['monitor.pysys_log'] = types.SimpleNamespace(pysys_logger=pysys_logger)
-sys.modules['monitor'] = types.ModuleType('monitor')
+dummy_logger = types.SimpleNamespace(warning=lambda *a, **k: None, error=lambda *a, **k: None)
+monitor_logger = types.SimpleNamespace(get_logger=lambda name=None: dummy_logger,
+                                       init_logger=lambda *a, **k: dummy_logger)
+sys.modules['monitor.logger'] = monitor_logger
+monitor_pkg = types.ModuleType('monitor')
+monitor_pkg.get_logger = monitor_logger.get_logger
+monitor_pkg.init_logger = monitor_logger.init_logger
+sys.modules['monitor'] = monitor_pkg
 
 def _gen_logdir(path: str) -> str:
     path = '/' + str(path).strip('/')

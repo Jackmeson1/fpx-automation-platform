@@ -1,5 +1,7 @@
 # Base class of System Object
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 from logging import _checkLevel
 from SystemTestCase.tc_mapping import TcFuncMapping
 
@@ -46,4 +48,4 @@ class SysObj(TcFuncMapping):
 
     @staticmethod
     def sys_log(log_params: dict):
-        pysys_logger.log(_checkLevel(log_params.get('LEVEL'), log_params.get('msg')))
+        logger.log(_checkLevel(log_params.get('LEVEL'), log_params.get('msg')))

@@ -16,7 +16,9 @@ from SystemTestCase.tc_parser import TcFileParser, NameSpace
 from SystemTestCase.tc_parser import FixtureFileParse
 from SystemTestCase.tc_parser import TcDirective
 from config.environment import ENV
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 
 def setUpModule():
@@ -32,7 +34,7 @@ def setUpModule():
             try:
                 node.login()
             except SysTcFail as e:
-                pysys_logger.error('Failed to login node {}: {}'.format(name, e), exc_info=True)
+                logger.error('Failed to login node {}: {}'.format(name, e), exc_info=True)
                 ENV.failed_nodes.append(name)
 
 def tearDownModule():
@@ -92,7 +94,7 @@ class ScriptTestCaseBase(SysTestCase):
             if hasattr(node, 'logfile'):  # pexpect logfile
                 node.logfile = self.logfile
             else:  # non-pexpect nodes
-                pysys_logger.error('non-pexpect is not yet supported.')
+                logger.error('non-pexpect is not yet supported.')
         super().setUp()
         self.parse_script()
         # TODO enable log herf link on html report once tc starts
@@ -127,7 +129,7 @@ class ScriptTestCaseBase(SysTestCase):
         if type(s) is str:
             o = bytes(s, 'utf-8')
         elif type(s) is not bytes:
-            pysys_logger.error('log content must be in string or bytes format')
+            logger.error('log content must be in string or bytes format')
         else:
             o = s
         self.logfile.write(o)
@@ -141,13 +143,13 @@ class ScriptTestCaseBase(SysTestCase):
 
     # define an interface in this base class, must be implemented in the subclasses
     def get_logfile_name(self) -> str:
-        pysys_logger.error(
+        logger.error(
             'This is an interface of "get_logfile_name" defined in the base class, must be implemented in subclasses.')
         exit(-1)
 
     def parse_script(self):
         msg = 'This is an interface of "prep_logfile" defined in the base class, must be implemented in subclasses.'
-        pysys_logger.error(msg)
+        logger.error(msg)
         raise SysTcFail(msg)
 
     def exec_init_scr(self):
@@ -179,7 +181,7 @@ class ScriptTestCaseBase(SysTestCase):
         if self.logfile:
             self.write_log('----------- {} ---------------\n'.format(datetime.datetime.now()))
         if script is None:
-            pysys_logger.error('script is empty in {}'.format(self.tc_info.full_filename))
+            logger.error('script is empty in {}'.format(self.tc_info.full_filename))
         for step in script:
             try:
                 linenum = step[0]
@@ -188,12 +190,12 @@ class ScriptTestCaseBase(SysTestCase):
                 action = e.action or self.action
                 self.write_log('<ERROR> @line {}:  {}'.format(linenum, e.value))
                 if action == TcFailAction.STOP:
-                    pysys_logger.error('Test Script stops - ' + e.value)
+                    logger.error('Test Script stops - ' + e.value)
                     # self.shouldStop = True
                     self.keepConfig = True
                     raise
                 elif action == TcFailAction.CONTINUE:
-                    pysys_logger.warning('Continue after step failed - ' + e.value)
+                    logger.warning('Continue after step failed - ' + e.value)
                     self.fail_list.append(e.value)
                 else:  # default action: raise exception and SysTestCase framework will jump to next TC.
                     raise
@@ -309,7 +311,7 @@ class ScriptTestCaseBase(SysTestCase):
                     # value = [TcFileParser.P_LABEL.sub(self.fetch_label, x) for x in v]
                     value = [self.label_sub(x) for x in v]
                 else:
-                    pysys_logger.error('Parameter {} is not string or list'.format(k))
+                    logger.error('Parameter {} is not string or list'.format(k))
                     raise TypeError('Parameter {} is not string or list'.format(k))
                 param[k] = value
             if self.curr_node:
@@ -328,7 +330,7 @@ class ScriptTestCaseBase(SysTestCase):
                 # right_val = TcFileParser.P_LABEL.sub(self.fetch_label, right_val)
                 right_val = self.label_sub(right_val)
             else:
-                pysys_logger.error('label value must be str or list. label value in step: {}'.format(right_val))
+                logger.error('label value must be str or list. label value in step: {}'.format(right_val))
                 raise
             labels[key] = right_val
         # elif cmd == TcDirective.SET_LIST:
