@@ -6,7 +6,9 @@ from sysrunner.sysinit import pysys_root
 from SystemTestCase.SysTestCase import SysTestCase, TestCaseInfo, TcFailAction
 from SystemTestCase.script_testcase import ScriptTC, ScriptFixture
 from SystemTestCase.tc_parser import TcFileParser
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 from SystemTestCase import helpers
 import pandas
 from pandas.core.frame import DataFrame
@@ -189,12 +191,12 @@ class SysTestSuite(unittest.TestSuite):
 
     def _read_json_scenario(self):
         # TODO: read scenario  in json file
-        pysys_logger.error('JSON scenario file is not yet support')
+        logger.error('JSON scenario file is not yet support')
         exit(-1)
 
     def _read_xml_scenario(self):
         # TODO: read scenario  in xml file
-        pysys_logger.error('JSON scenario file is not yet support')
+        logger.error('JSON scenario file is not yet support')
         exit(-1)
 
     def _read_csv_scenario(self):
@@ -243,7 +245,7 @@ class SysTestSuite(unittest.TestSuite):
                 self.col_status[tcid_filter] = CvsTcStatus.NOTRUN
         else: # JSON, XML, not yet support
             #TODO support SML, JSON format scenario
-            pysys_logger.error('scenario file other than CVS format is yet supported')
+            logger.error('scenario file other than CVS format is yet supported')
             exit(-1)
         self.sce_df.to_json(self.log_dir + '/scenario.json')
 
@@ -544,8 +546,10 @@ class ReportHtml:
         self.report_dir = None  # same as log_dir by default
         self.url = url
         self.base_path = base_path
-        self.sse_server = SSEServer(('0.0.0.0', 8765))
-        threading.Thread(target=self.sse_server.serve_forever, daemon=True).start()
+
+        self.summary = {'pass': 0, 'fail': 0, 'warn': 0}
+        self.summary_elem = None
+
 
     def init_report_html(self, tests=()):
         # TODO: might merge this with nevigate_to and read_scenario loop less
@@ -570,6 +574,9 @@ class ReportHtml:
         self.hierarchy = tree.find('body//*[@id="{}"]'.format(ReportParm.hierarchy))
         self.running_status = tree.find('body//*[@id="{}"]'.format(ReportParm.RUNNING_STATUS))
         self.running_status.attrib['status'] = self.running_status.text = ScenarioStatus.RUNNING
+        self.summary_elem = tree.find('body//*[@id="summary"]')
+        if self.summary_elem is not None:
+            self.summary_elem.text = 'Pass: 0 Fail: 0 Warn: 0'
         has_fixture = False
         curr_path_list = None
         # for tc in self._tests:
@@ -613,6 +620,15 @@ class ReportHtml:
 
     def update_report_html(self, tc: SysTestCase, move_next: bool, sce_status=ScenarioStatus.RUNNING):
         curr_tc = self.testcases[self.curr_tc_index]
+        if tc.status == TestStatus.SUCCESS:
+            self.summary['pass'] += 1
+        elif tc.status == TestStatus.WARNING:
+            self.summary['warn'] += 1
+        elif tc.status in (TestStatus.ERROR, TestStatus.FAILURE):
+            self.summary['fail'] += 1
+        if self.summary_elem is not None:
+            self.summary_elem.text = 'Pass: {} Fail: {} Warn: {}'.format(
+                self.summary['pass'], self.summary['fail'], self.summary['warn'])
         curr_tc.attrib['href'] = tc.log_fname
         curr_span = curr_tc.getparent()
         curr_class = curr_span.get('class')
@@ -644,6 +660,8 @@ class ReportHtml:
                 # self.testcases[self.curr_tc_index].attrib['id'] = ReportParm.CURR_TC
                 curr_tc = self.testcases[self.curr_tc_index]
                 curr_tc.attrib['id'] = ReportParm.CURR_TC
+        if tc.error_stack:
+            curr_tc.attrib['stack'] = tc.error_stack.strip()
         if move_next or tc_status_updated:
             self.file.seek(0)
             self.file.truncate()

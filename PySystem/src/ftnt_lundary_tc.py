@@ -1,7 +1,9 @@
 from SystemTestCase.SysTestCase import SysTestCase
 # from subprocess import call, check_output, run
 import subprocess
-from monitor import pysys_log
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 class DemoTc(SysTestCase):
     def __init__(self, test_method, tc_data_set: dict):
@@ -20,7 +22,7 @@ class DemoTc(SysTestCase):
             subprocess.call('echo "I like potatos"', shell=True)
             r = subprocess.run(['ifconfig'], stdout=subprocess.PIPE).stdout
             print(r)
-            pysys_log.pysys_logger.warning('log info in test for report')
+            logger.warning('log info in test for report')
             # call(['ping www.google.com'])
             # call(['curl http://www.tired.com -kv'])
 

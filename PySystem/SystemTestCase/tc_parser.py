@@ -1,5 +1,7 @@
 import re
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 from config.environment import ENV
 from collections import OrderedDict
 from SystemTestCase.SysTestCase import SysTcFail
@@ -70,7 +72,7 @@ class TcFileParser(object):
                         elif section == TcSection.TCID_LIST:
                             script = tcid_list
                         else:
-                            pysys_logger.error('Section label {} in {} is not supported.'.format(section, self.file))
+                            logger.error('Section label {} in {} is not supported.'.format(section, self.file))
                             raise Exception('Section label {} in {} is not supported.'.format(section, self.file))
                             # TODO: log section label is not supported
                             pass
@@ -113,7 +115,7 @@ class TcFileParser(object):
                         script.append((i, (key, param)))
             except Exception as e:
                 err_msg = 'Error occours @ line {} when parsing tc {}: '.format(i, self.tcid) + str(e) 
-                pysys_logger.error(err_msg)
+                logger.error(err_msg)
                 raise SysTcFail(err_msg)
         return init_scr, setup_scr, test_scr, teardown_scr, tcid_list
 
@@ -190,7 +192,7 @@ class TcFileParser(object):
                 self.curr_node = None
             else:
                 # TODO: log invalid node name and set fail
-                pysys_logger.error('wrong Node Name {} is specified in script'.format(node_name))
+                logger.error('wrong Node Name {} is specified in script'.format(node_name))
                 raise AttributeError('Invalid nodename {}. Node name must be [LOCAL],\
                                      [GLOBAL] or a node defined in ENV class of properties.'.format(node_name))
             return TcDirective.SET_NODE, self.curr_node

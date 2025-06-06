@@ -12,7 +12,9 @@ from selenium.webdriver.support.select import Select
 from SystemObject.gui_node import GuiNode, BrowserType, GuiType, GuiElemParser, FindBy
 from SystemTestCase.SysTestCase import SysTcFail
 from ftnt_nodes.ftnt_cli import FosCli
-from monitor.pysys_log import pysys_logger
+from monitor import get_logger
+
+logger = get_logger(__name__)
 
 
 class FosParamParser:
