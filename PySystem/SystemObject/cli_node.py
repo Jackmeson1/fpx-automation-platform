@@ -173,12 +173,17 @@ class CliNode(spawn, SysObj):
             # return True
 
     def login(self, timeout=-1) -> None:
-        if self.conn_type == ConnType.SSH:
-            self.ssh_login(timeout)
-        elif self.conn_type == ConnType.TELNET:
-            self.telnet_login(timeout)
-        else:
-            raise Exception('Connection types other than SSH or Telnet are yet to support')
+        try:
+            if self.conn_type == ConnType.SSH:
+                self.ssh_login(timeout)
+            elif self.conn_type == ConnType.TELNET:
+                self.telnet_login(timeout)
+            else:
+                raise Exception('Connection types other than SSH or Telnet are yet to support')
+        except Exception as e:
+            pysys_logger.error('login failed on {}: {}'.format(self.ip, e), exc_info=True)
+            self.logged_in = False
+            raise SysTcFail(str(e), action=TcFailAction.NEXT)
 
     def ssh_login(self, timeout=-1) -> None:
         self.logged_in = False
@@ -192,27 +197,28 @@ class CliNode(spawn, SysObj):
         if self.port != 0:
             ssh_options = ssh_options + ' -p{}'.format(str(self.port))
         cmd = "ssh %s %s" % (ssh_options, self.ip)
-        self._spawn(cmd)
-        if not self.prompt(p_resp, timeout):  # includes timout as failure
-            pysys_logger.error('login failed: IP: {}, command: {}'.format(self.ip, cmd))
-            raise Exception("SSH to {} failed. ({})".format(self.ip, cmd))
-        self.logged_in = True
+        try:
+            self._spawn(cmd)
+            if not self.prompt(p_resp, timeout):  # includes timout as failure
+                raise Exception("SSH to {} failed. ({})".format(self.ip, cmd))
+            self.logged_in = True
+        except Exception:
+            self.logged_in = False
+            raise
 
     def telnet_login(self, timeout=-1) -> None:
         self.logged_in = False
         opt = [self.ip]
         if self.port != 0:
             opt.append(str(self.port))
-        self._spawn('telnet', opt)
-        if not self.prompt(self.login_prompt_resp, timeout):
-            raise Exception(" Telnet to {} failed.".format(self.ip))
-#         self.sendline(self.user)
-#         if not self.prompt(self.passwd_prompt, append_prompt=False):
-#             raise Exception("login failed.")
-#         self.sendline(self.passwd)
-#         if False == self.prompt():
-#             raise Exception(self.func_name + " failed.")
-        self.logged_in = True
+        try:
+            self._spawn('telnet', opt)
+            if not self.prompt(self.login_prompt_resp, timeout):
+                raise Exception(" Telnet to {} failed.".format(self.ip))
+            self.logged_in = True
+        except Exception:
+            self.logged_in = False
+            raise
 
     def logout(self) -> None:
         if self.conn_type == ConnType.TELNET:
