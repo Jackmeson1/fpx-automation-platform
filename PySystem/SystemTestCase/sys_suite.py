@@ -548,7 +548,7 @@ class ReportHtml:
         self.url = url
         self.base_path = base_path
 
-        self.summary = {'pass': 0, 'fail': 0, 'warn': 0}
+        self.summary = {'pass': 0, 'fail': 0, 'warn': 0, 'skip': 0}
         self.summary_elem = None
 
         self.sse_server = None
@@ -589,6 +589,9 @@ class ReportHtml:
             self.summary_elem.xpath(".//span[@class='test_summary_pass']")[0].text = 'Pass: 0'
             self.summary_elem.xpath(".//span[@class='test_summary_erro']")[0].text = ' Fail: 0'
             self.summary_elem.xpath(".//span[@class='test_summary_warn']")[0].text = ' Warn: 0'
+            elem = self.summary_elem.xpath(".//span[@class='test_summary_skip']")
+            if elem:
+                elem[0].text = ' Skip: 0'
         has_fixture = False
         curr_path_list = None
         # for tc in self._tests:
@@ -638,10 +641,15 @@ class ReportHtml:
             self.summary['warn'] += 1
         elif tc.status in (TestStatus.ERROR, TestStatus.FAILURE):
             self.summary['fail'] += 1
+        elif tc.status == TestStatus.SKIP:
+            self.summary['skip'] += 1
         if self.summary_elem is not None:
             self.summary_elem.xpath(".//span[@class='test_summary_pass']")[0].text = f"Pass: {self.summary['pass']}"
             self.summary_elem.xpath(".//span[@class='test_summary_erro']")[0].text = f" Fail: {self.summary['fail']}"
             self.summary_elem.xpath(".//span[@class='test_summary_warn']")[0].text = f" Warn: {self.summary['warn']}"
+            elem = self.summary_elem.xpath(".//span[@class='test_summary_skip']")
+            if elem:
+                elem[0].text = f" Skip: {self.summary['skip']}"
         curr_tc.attrib['href'] = tc.log_fname
         curr_span = curr_tc.getparent()
         curr_class = curr_span.get('class')
