@@ -66,11 +66,15 @@ span.test_summary_pass {
 }
 
 span.test_summary_warn {
-	color:#ff6600;
+        color:#ff6600;
 }
 
 span.test_summary_erro {
         color:#ff0000;
+}
+
+span.test_summary_skip {
+        color:#666666;
 }
 
 pre.tc-stack {
