@@ -83,6 +83,7 @@ def main():
     parser.add_argument('-sk', '--skip_fixture', action='store_true', default=False,
                         help='Skip fixture conf (prov files)')
     parser.add_argument('-c', '--conf', help='specify config file (JSON format)')
+    parser.add_argument('--profile', help='load config profile from config/profiles')
     parser.add_argument('-H', '--html_path', help='specify the html report base url path')
     parser.add_argument('-P', '--pause_on_fail', action='store_true', default=False,
                         help='pause when current TC is fail')
@@ -107,7 +108,15 @@ def main():
     with open(sys_conf, 'r') as f:
         conf: dict = json.load(f)
         assert len(conf) > 0
-    # conf_file = args.conf or def_conf
+
+    if args.profile:
+        prof_path = os.path.join(pysys_root, 'config', 'profiles', f'{args.profile}.json')
+        if os.path.isfile(prof_path):
+            with open(prof_path, 'r') as f:
+                conf.update(json.load(f))
+        else:
+            raise FileNotFoundError(f'Profile {args.profile} not found: {prof_path}')
+
     conf_file = args.conf
     if conf_file:
         if os.path.isfile(conf_file):
@@ -138,8 +147,14 @@ def main():
     lab_dir: str = conf.get('lab_dir')
     if lab_dir:
         sys.path.append(lab_dir)
-        # importlib.import_module('environment.environment')
         importlib.import_module('environment')
+    # Initialize nodes from profile
+    node_names = conf.get('node_list') or []
+    if node_names:
+        from config import elements
+        for n in node_names:
+            if hasattr(elements, n):
+                setattr(ENV, n, getattr(elements, n))
 
     # Logging path
     log_base: str = conf.get('log_dir')
@@ -185,8 +200,12 @@ def main():
         
     # if not scenario_file.startswith('/'):  # relative path to test base directory
     #     scenario_file = tc_base + '/' + args.scenario
-    # tc_tab: DataFrame = csv_scenario_parse(scenario_file, args.gen_scenario)
-    tc_tab = get_standalon_sec if args.standalone else csv_scenario_parse(args.target)
+    target_file = args.target
+    if not args.standalone and not os.path.isabs(target_file):
+        sce_root = conf.get('sce_root') or tc_base
+        target_file = os.path.join(sce_root, target_file)
+
+    tc_tab = get_standalon_sec if args.standalone else csv_scenario_parse(target_file)
     test_suite = SysTestSuite(tc_tab, tc_base=tc_base, is_debug=args.debug,
                               pause_fail=args.pause_on_fail, failed_action=args.action,
                               skip_fixture = args.skip_fixture,

@@ -17,6 +17,9 @@ import os
 import shutil
 from lxml import etree
 import webbrowser
+import threading
+import time
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 from executor.sysrunner import SysTestResult, TestStatus
 
@@ -39,6 +42,49 @@ class ScenarioStatus:
     PAUSED = 'PAUSED'
     RUNNING = 'RUNNING'
     DONE = 'DONE'
+
+
+class _SSEHandler(BaseHTTPRequestHandler):
+    """Minimal handler to keep a Server-Sent Events connection."""
+
+    def log_message(self, format, *args):
+        return  # Suppress logging
+
+    def do_GET(self):
+        if self.path != '/events':
+            self.send_response(404)
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/event-stream')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Connection', 'keep-alive')
+        self.end_headers()
+        self.server.clients.append(self.wfile)
+        try:
+            while True:
+                time.sleep(1)
+        except Exception:
+            pass
+        finally:
+            if self.wfile in self.server.clients:
+                self.server.clients.remove(self.wfile)
+
+
+class SSEServer(ThreadingHTTPServer):
+    """Threaded HTTP server for broadcasting SSE messages."""
+
+    def __init__(self, server_address):
+        super().__init__(server_address, _SSEHandler)
+        self.clients = []
+
+    def push(self, message: str):
+        for c in list(self.clients):
+            try:
+                c.write(f"data: {message}\n\n".encode('utf-8'))
+                c.flush()
+            except Exception:
+                self.clients.remove(c)
 
 
 class CsvFields:
@@ -500,8 +546,10 @@ class ReportHtml:
         self.report_dir = None  # same as log_dir by default
         self.url = url
         self.base_path = base_path
+
         self.summary = {'pass': 0, 'fail': 0, 'warn': 0}
         self.summary_elem = None
+
 
     def init_report_html(self, tests=()):
         # TODO: might merge this with nevigate_to and read_scenario loop less
@@ -624,6 +672,8 @@ class ReportHtml:
             # self.tc_update_file.write(self.testcases[self.curr_tc_index].get('title'))
             self.tc_update_file.write(curr_tc.get('title') + ':' + curr_tc.get('status'))
             self.tc_update_file.flush()
+            if self.sse_server:
+                self.sse_server.push(curr_tc.get('title') + ':' + curr_tc.get('status'))
         if sce_status == ScenarioStatus.DONE:
             self.file.close()
             self.tc_update_file.close()

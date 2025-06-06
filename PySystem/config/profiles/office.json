@@ -3,10 +3,10 @@
     "/Project/fpx_auto/",
     "/Project/PySystem/"
   ],
-  "tc_base": "/Project/fpx_auto/trail",
-  "sce_root": "/Project/fpx_auto",
-  "node_list": ["Linux111", "Linux101"],
-  "lab_dir": "/Project/fpx_auto/environment",
+  "tc_base": "/Project/office/trail",
+  "sce_root": "/Project/office",
+  "node_list": ["Linux105"],
+  "lab_dir": "/Project/office/environment",
   "log_dir": "logs",
   "Xauthority": "/root/.Xauthority",
   "Webdriver_dir": "/opt/Webdriver/bin"

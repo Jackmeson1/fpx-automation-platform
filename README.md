@@ -15,6 +15,15 @@ cp PySystem/config/config_sample.yaml PySystem/config/config_local.yaml
 The framework will load `config_local.yaml` automatically if it exists,
 otherwise it falls back to `config_sample.yaml`.
 
+Runtime options are stored in JSON profiles under `PySystem/config/profiles/`.
+Each profile can define `node_list` and `sce_root` (scenario root directory)
+along with other fields. Example switching between profiles:
+
+```bash
+python PySystem/sysrunner/run.py --profile=default example.csv
+python PySystem/sysrunner/run.py --profile=office office.csv
+```
+
 All configuration fields can also be overridden using environment variables.
 The variable name is built from the node name and field, for example
 `CTRL_PC_IP` or `Linux101_PASSWD`. Nested `labels` fields can be overridden by
