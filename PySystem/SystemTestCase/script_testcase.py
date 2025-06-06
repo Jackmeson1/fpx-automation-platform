@@ -27,7 +27,13 @@ def setUpModule():
             node: CliNode = node
             node.node_name = name
             ENV.node_list.append(node)
-            node.login()
+            if not hasattr(ENV, 'failed_nodes'):
+                ENV.failed_nodes = []
+            try:
+                node.login()
+            except SysTcFail as e:
+                pysys_logger.error('Failed to login node {}: {}'.format(name, e), exc_info=True)
+                ENV.failed_nodes.append(name)
 
 def tearDownModule():
     for i, node in enumerate(ENV.node_list):
@@ -345,6 +351,10 @@ class ScriptTestCaseBase(SysTestCase):
                 raise TypeError(err_msg)
             self.curr_node = param
             self.write_log('<Node: {}>\n'.format(node_name))
+            if isinstance(param, CliNode) and not param.logged_in:
+                err = 'Connection to node {} failed.'.format(node_name)
+                self.write_log('<ERROR>: ' + err)
+                raise SysTcFail(err, action=TcFailAction.NEXT)
             return True
         elif cmd == TcDirective.BREAKPOINT:
             if self.tc_info.is_debug:
