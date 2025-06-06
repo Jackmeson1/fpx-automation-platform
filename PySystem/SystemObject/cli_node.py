@@ -175,17 +175,25 @@ class CliNode(spawn, SysObj):
             # return True
 
     def login(self, timeout=-1) -> None:
-        try:
-            if self.conn_type == ConnType.SSH:
-                self.ssh_login(timeout)
-            elif self.conn_type == ConnType.TELNET:
-                self.telnet_login(timeout)
-            else:
-                raise Exception('Connection types other than SSH or Telnet are yet to support')
-        except Exception as e:
-            logger.error('login failed on {}: {}'.format(self.ip, e), exc_info=True)
-            self.logged_in = False
-            raise SysTcFail(str(e), action=TcFailAction.NEXT)
+        last_err = None
+        for attempt in range(1, self.attempts + 1):
+            try:
+                if self.conn_type == ConnType.SSH:
+                    self.ssh_login(timeout)
+                elif self.conn_type == ConnType.TELNET:
+                    self.telnet_login(timeout)
+                else:
+                    raise Exception('Connection types other than SSH or Telnet are yet to support')
+                self.logged_in = True
+                return
+            except Exception as e:
+                last_err = e
+                logger.error('login failed on %s (attempt %d/%d): %s',
+                             self.ip, attempt, self.attempts, e, exc_info=True)
+                self.logged_in = False
+                if attempt < self.attempts:
+                    time.sleep(self.wait_time)
+        raise SysTcFail(str(last_err), action=TcFailAction.NEXT)
 
     def ssh_login(self, timeout=-1) -> None:
         self.logged_in = False
