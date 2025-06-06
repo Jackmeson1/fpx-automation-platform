@@ -7,7 +7,7 @@ from config import elements
 #        'SERVER': 'SERVER101'}
 
 class ENV:
-    CTRL_PC = elements.LOCALHOST  # LOCAL must be defined
+    CTRL_PC = elements.CTRL_PC  # LOCAL must be defined
     # PC1 = elements.Linux105
     # SERVER1 = elements.Linux101
     # SERVER2 = elements.Linux111

@@ -1,0 +1,59 @@
+# Sample configuration for system nodes
+# Copy this file to config_local.yaml and fill in real credentials
+CTRL_PC:
+  class: UbuntuCli
+  ip: localhost
+  port: 22
+  user: test
+  passwd: test
+Linux111:
+  class: UbuntuCli
+  ip: 172.18.29.111
+  conn_type: SSH
+  user: leonardo
+  passwd: leonardo
+  timeout: 40
+  labels:
+    IF_CLIENT: eth1
+    IF_INET: eth0
+    IF_SERVER: eth2
+    IF_MGMT: eth3
+    IP_INET: 172.18.29.111
+    IP_CLIENT: 10.160.0.111
+    IP_SERVER: 10.170.0.111
+    IP_MGMT: 10.150.0.111
+    OVERSIZE_LIMIT: '30'
+Linux101:
+  class: CentosCli
+  ip: 172.18.29.101
+  conn_type: SSH
+  user: root
+  passwd: fortinet
+  timeout: 40
+  labels:
+    IF_CLIENT: eth1
+    IF_INET: eth0
+    IF_SERVER: eth2
+    IF_MGMT: eth3
+    IP_INET: 172.18.29.101
+    IP_CLIENT: 10.160.0.101
+    IP_SERVER: 10.170.0.101
+    IP_MGMT: 10.150.0.101
+    OVERSIZE_LIMIT: '30'
+Linux105:
+  class: UbuntuCli
+  ip: 172.18.29.105
+  port: 22
+  user: leo
+  passwd: leo
+  conn_type: SSH
+  timeout: 20
+  labels:
+    IF_CLIENT: port2
+    IF_INET: port1
+    IF_SERVER: port3
+    IF_MGMT: port4
+    IP_CLIENT: 10.160.0.105
+    IP_INET: 172.18.29.105
+    IP_SERVER: 10.170.0.105
+    IP_MGMT: 10.150.0.105

@@ -1,129 +1,54 @@
+import os
+import yaml
 from SystemObject import cli_node
-from config import properties
-import sys
-# sys.path.append(properties.project_dir)
-# from ftnt_nodes import ftnt_cli
 
-LOCALHOST = cli_node.UbuntuCli(
-        ip='localhost',
-        port=22,
-        # passwd='leo',
-        # user='leo')
-        passwd='test',
-        user='test'
-        )
-
-Linux111 = cli_node.UbuntuCli(
-        ip='172.18.29.111',
-        conn_type=cli_node.ConnType.SSH,
-        user='leonardo',
-        passwd='leonardo',
-        timeout=40,
-        labels= {
-                'IF_CLIENT': 'eth1',
-                'IF_INET': 'eth0',
-                'IF_SERVER': 'eth2',
-                'IF_MGMT': 'eth3',
-                'IP_INET': '172.18.29.111',
-                'IP_CLIENT': '10.160.0.111',
-                'IP_SERVER': '10.170.0.111',
-                'IP_MGMT': '10.150.0.111',
-                'OVERSIZE_LIMIT': '30'
-        }
-)
-
-Linux101 = cli_node.CentosCli(
-        ip='172.18.29.101',
-        conn_type=cli_node.ConnType.SSH,
-        user='root',
-        passwd='fortinet',
-        timeout=40)
-Linux101.IF_CLIENT = 'eth1'
-Linux101.IF_INET = 'eth0'
-Linux101.IF_SERVER = 'eth2'
-Linux101.IF_MGMT = 'eth3'
-Linux101.IP_INET = '172.18.29.101'
-Linux101.IP_CLIENT = '10.160.0.101'
-Linux101.IP_SERVER = '10.170.0.101'
-Linux101.IP_MGMT = '10.150.0.101'
-Linux101.OVERSIZE_LIMIT = '30'
+# Path to configuration files
+_conf_dir = os.path.dirname(os.path.abspath(__file__))
+_sample_cfg = os.path.join(_conf_dir, 'config_sample.yaml')
+_local_cfg = os.path.join(_conf_dir, 'config_local.yaml')
 
 
-Linux105 = cli_node.UbuntuCli(
-        ip='172.18.29.105',
-        port=22,
-        user='leo',
-        passwd='leo',
-        conn_type=cli_node.ConnType.SSH,
-        timeout=20,
-        labels={'IF_CLIENT': 'port2',
-                'IF_INET': 'port1',
-                'IF_SERVER': 'port3',
-                'IF_MGMT': 'port4',
-                'IP_CLIENT': '10.160.0.105',
-                'IP_INET': '172.18.29.105',
-                'IP_SERVER': '10.170.0.105',
-                'IP_MGMT': '10.150.0.105'
-                }
-        )
+def _load_config():
+    cfg_file = _local_cfg if os.path.exists(_local_cfg) else _sample_cfg
+    with open(cfg_file, 'r') as f:
+        config = yaml.safe_load(f) or {}
 
-# Fpx_5 = ftnt_cli.FpxCli(
-#         ip='172.18.29.5',
-#         port=23,
-#         passwd='leo',
-#         user='leo',
-#         labels={'IF_CLIENT': 'port2',
-#                 'IF_INET': 'port1',
-#                 'IF_SERVER': 'port3',
-#                 'IF_MGMT': 'port4',
-#                 'IP_CLIENT': '10.160.0.5',
-#                 'PROXY_PORT': '8080',
-#                 'FTP_PROXY_PORT': '21',
-#                 'IF_DEFAULT_ROUTE': 'port1',
-#                 'DEFAULT_GATEWAY': '172.18.29.1'
-#                 }
-#         )
-#
-# Fpx_2 = ftnt_cli.FpxCli(
-#         ip='172.18.29.2',
-#         port=23,
-#         passwd='admin',
-#         user='admin',
-#         #version='2.0',
-#         labels={'IF_CLIENT': 'port2',
-#                 'IF_INET': 'port1',
-#                 'IF_SERVER': 'port3',
-#                 'IF_MGMT': 'port4',
-#                 'IP_INET': '172.18.29.2',
-#                 'IP_CLIENT': '10.160.0.2',
-#                 'IP_SERVER': '10.170.0.2',
-#                 'IP_MGMT': '10.150.0.2',
-#                 'PROXY_PORT': '8080',
-#                 'SERVER_OUTGOING_IP1': '10.170.0.203',
-#                 'SERVER_OUTGOING_IP2': '10.170.0.204',
-#                 'IF_DEFAULT_ROUTE': 'port1',
-#                 'DEFAULT_GATEWAY': '172.18.29.1'
-#                 }
-#         )
-#
-# Fpx_9 = ftnt_cli.FpxCli(
-#         ip='172.18.29.9',
-#         port=23,
-#         passwd='leo',
-#         user='leo',
-#         labels={'IF_CLIENT': 'port2',
-#                 'IF_INET': 'port1',
-#                 'IF_SERVER': 'port3',
-#                 'IF_MGMT': 'port4',
-#                 'IP_INET': '172.18.29.9',
-#                 'IP_CLIENT': '10.160.0.9',
-#                 'IP_SERVER': '10.170.0.9',
-#                 'SERVER_OUTGOING_IP1': '10.170.0.217',
-#                 'SERVER_OUTGOING_IP2': '10.170.0.218',
-#                 'IP_MGMT': '10.150.0.9',
-#                 'PROXY_PORT': '8080',
-#                 'IF_DEFAULT_ROUTE': 'port1',
-#                 'DEFAULT_GATEWAY': '172.18.29.1'
-#                 }
-#         )
+    def _override(prefix, data):
+        for k, v in data.items():
+            env_key = f"{prefix}_{k}".upper()
+            if isinstance(v, dict):
+                _override(env_key, v)
+            else:
+                env_val = os.getenv(env_key)
+                if env_val is not None:
+                    if isinstance(v, int):
+                        try:
+                            data[k] = int(env_val)
+                        except ValueError:
+                            data[k] = env_val
+                    else:
+                        data[k] = env_val
+    for name, info in config.items():
+        _override(name, info)
+    return config
 
+
+_cfg = _load_config()
+
+
+def _create_node(params: dict):
+    cls_name = params.pop('class', 'UbuntuCli')
+    cls = getattr(cli_node, cls_name)
+    if 'conn_type' in params and isinstance(params['conn_type'], str):
+        params['conn_type'] = getattr(cli_node.ConnType, params['conn_type'])
+    labels = params.get('labels') or {}
+    node = cls(**{k: v for k, v in params.items() if k != 'labels'})
+    for k, v in labels.items():
+        setattr(node, k, v)
+    if labels:
+        node.labels = labels
+    return node
+
+# Export nodes as module attributes
+for _name, _params in _cfg.items():
+    globals()[_name] = _create_node(dict(_params))
