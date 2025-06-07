@@ -299,4 +299,5 @@ Icon?
 # Temporary files
 *~
 *.swp
-*.tmp 
+*.tmp
+vs_pysys_workspace/
