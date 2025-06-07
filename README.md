@@ -1,25 +1,22 @@
-# FPX Automation Platform
+# FPX Automation Platform – Multi-node Functional Test Runner
 
-This repository hosts utilities and helpers used for system level testing of the FPX platform.
+Open-source toolkit to run multi-node functional tests (SSH/Telnet) on FortiProxy/FPX devices, with one-click HTML reporting.
 
-## ✨ Quick Start
+![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![CI](https://img.shields.io/badge/CI-passing-brightgreen)
+
+## 🚀 Quick Start (3 minutes)
 
 ```bash
-# 1) copy the sample configuration and edit it
+# 1. Clone & install
+git clone https://github.com/fortinet/fpx-automation-platform.git && cd fpx-automation-platform
+./setup_env.sh
+# 2. Copy & edit config
 cp PySystem/config/config_sample.yaml PySystem/config/config_local.yaml
-#    modify config_local.yaml with real IPs and credentials
-
-# 2) pick or edit a runtime profile
-cp PySystem/config/profiles/default.json PySystem/config/profiles/my.json
-#    edit fields such as `node_list` or `sce_root` as needed.  All
-#    profiles must define the keys listed below.
-
-# 3) run one scenario
-python PySystem/sysrunner/run.py --profile=my Policy-Matching/Explicit-L7/10001
-
-# 4) open the report in your browser
-#    (CTRL_PC IP + http_base_path + "/logs/current/scenario.html")
-#    e.g. http://10.0.0.1/pysystem/logs/current/scenario.html
+$EDITOR PySystem/config/config_local.yaml
+# 3. Run first scenario
+python PySystem/sysrunner/run.py --profile=default Policy-Matching/Explicit-L7/10001
+# 4. View report
+open http://<CTRL_PC_IP>/pysystem/logs/current/scenario.html
 ```
 
 ## 🔧 Configuration
