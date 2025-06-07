@@ -1,8 +1,0 @@
-Path,QAID,Objective,Priority,Bug,Result,Build,Mark,Tester,Autotested,Platform,BIOS,Comment
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10001,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10002,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and ACCEPT) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10003,Verify HTTP/HTTPS Matching the explicit polocy (SSL-exempt and ACCEPT) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10004,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and deny) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10005,Verify HTTP/HTTPS Matching the explicit polocy (CERTIFICATE inspection and DENY) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10006,Verify HTTP/HTTPS Matching the explicit polocy (SSL-EXEMPT and DENY) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
-/FortiProxy/7.0.0/Sanity/Policy-Matching/Explicit-L7/,10007,Verify HTTP/HTTPS Matching the explicit polocy (deep inspection and accept) with category address,Critical,n/a,NotRun,,,Leonardo Chen,Yes,FPX_VMWARE,,
